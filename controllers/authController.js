@@ -43,7 +43,21 @@ const login = async (req, res) => {
 
 // Register Student
 const registerStudent = async (req, res) => {
-  const { fullName, username, email, password, role = 'student', standard, year, stream } = req.body;
+  const {
+    fullName,
+    username,
+    email,
+    password,
+    role = 'student',
+    standard,
+    year,
+    stream,
+    contactNumber,
+    dateOfBirth,
+    guardianName,
+    guardianContactNumber,
+    guardianRelation
+  } = req.body;
 
   try {
     // Check if the student already exists
@@ -61,19 +75,25 @@ const registerStudent = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      role, // 'student'
+      role,
       standard,
       year,
-      stream
+      stream,
+      contactNumber,
+      dateOfBirth,
+      guardianName,
+      guardianContactNumber,
+      guardianRelation
     });
 
     return res.status(201).json({ message: 'Student created successfully!', student });
 
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 const getStudents = async (req, res) => {
   try {
     const students = await User.findAll({
