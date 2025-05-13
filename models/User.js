@@ -62,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     }, {
       tableName: 'users',   // your actual MySQL table name
-      timestamps: false     // because your table doesn’t have createdAt/updatedAt
+      timestamps: true     // because your table doesn’t have createdAt/updatedAt
     });
   
   
