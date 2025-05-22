@@ -1,23 +1,24 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "Student-App",
-    "host": "127.0.0.1",
+    "username": "studentuser",
+    "password": "Student@1234",
+    "database": "studentdb",
+    "host": "0.0.0.0",
     "dialect": "mysql"
   },
   "test": {
-    "username": "root",
-    "password": null,
-    "database": "Student-App_test",
-    "host": "127.0.0.1",
+    "username": "studentuser",
+    "password": "Student@1234",
+    "database": "studentdb",
+    "host": "0.0.0.0",
     "dialect": "mysql"
   },
   "production": {
-    "username": "root",
-    "password": null,
-    "database": "Student-App_production",
-    "host": "127.0.0.1",
+    "username": "studentuser",
+    "password": "Student@1234",
+    "database": "studentdb",
+    "host": "0.0.0.0",
     "dialect": "mysql"
   }
 }
+

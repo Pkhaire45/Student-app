@@ -2,11 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
 const sequelize = new Sequelize({
-  host: 'localhost',  // Your DB host
+  host: '13.203.203.147',  // Your DB host
   dialect: 'mysql',   // Dialect (MySQL)
-  username: 'root',   // Your DB username
-  password: '',       // Your DB password
-  database: 'Student-App',   // Your DB name
+  username: 'studentuser',   // Your DB username
+  password: 'Student@1234',       // Your DB password
+  database: 'studentdb',   // Your DB name
 });
 
 const db = {};

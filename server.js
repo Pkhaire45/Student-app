@@ -7,12 +7,12 @@ const { sequelize } = require('./models'); // Import the sequelize instance
 const PORT = process.env.PORT || 5001;
 
 // Start the server
-app.listen(PORT, async () => {
+app.listen(PORT, '127.0.0.1', async () => {
   try {
-    // Sync Sequelize models with the database
-    await sequelize.sync({ force: false }); // Set `force: true` to reset the database on each start, or `false` to avoid it
+    await sequelize.sync({ force: false });
     console.log(`Server is running on port ${PORT}`);
   } catch (error) {
     console.error('Error syncing database:', error);
   }
 });
+
