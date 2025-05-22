@@ -3,7 +3,7 @@
 require('dotenv').config(); // Load .env file
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models'); // Assuming User model is in models/
+const { User , Teacher} = require('../models'); // Assuming User model is in models/
 
 // Secret key for JWT (now from .env file)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -107,9 +107,69 @@ const getStudents = async (req, res) => {
     return res.status(500).json({ message: 'Server error while fetching students' });
   }
 };
+const addTeacher = async (req, res) => {
+  const {
+    fullName,
+    sex,
+    dateOfBirth,
+    contactNumber,
+    address,
+    teachingSubject,
+    totalExperience,
+    previousEmployer,
+    username,
+    email,
+    password
+  } = req.body;
 
+  try {
+    // Check if the teacher already exists
+    const existingTeacher = await Teacher.findOne({ where: { username } });
+    if (existingTeacher) {
+      return res.status(400).json({ message: 'Teacher already exists!' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the teacher
+    const teacher = await Teacher.create({
+      fullName,
+      sex,
+      dateOfBirth,
+      contactNumber,
+      address,
+      teachingSubject,
+      totalExperience,
+      previousEmployer,
+      username,
+      email,
+      password: hashedPassword
+    });
+
+    return res.status(201).json({ message: 'Teacher created successfully!', teacher });
+
+  } catch (error) {
+    console.error('Register teacher error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getTeachers = async (req, res) => {
+  try {
+    const teachers = await Teacher.findAll({
+      attributes: { exclude: ['password'] } // Exclude password from response
+    });
+    return res.status(200).json({ teachers });
+  } catch (error) {
+    console.error('Error fetching teachers:', error);
+    return res.status(500).json({ message: 'Server error while fetching teachers' });
+  }
+};
 module.exports = {
   login,
   registerStudent,
-  getStudents
+  getStudents,
+  addTeacher,
+  getTeachers
 };

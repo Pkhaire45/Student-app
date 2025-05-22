@@ -9,6 +9,7 @@ const router = express.Router();
 router.post('/login', authController.login); // Admin login
 router.post('/register', authController.registerStudent); // Student registration
 router.get('/students', authController.getStudents);
-
+router.post('/add-teacher', authController.addTeacher);
+router.get('/teachers', authController.getTeachers);
 module.exports = router;
  
