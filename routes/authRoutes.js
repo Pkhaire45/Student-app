@@ -11,5 +11,7 @@ router.post('/register', authController.registerStudent); // Student registratio
 router.get('/students', authController.getStudents);
 router.post('/add-teacher', authController.addTeacher);
 router.get('/teachers', authController.getTeachers);
+router.put('/teachers/:id', authController.editTeacher);
+router.put('/students/:id', authController.editStudent);
 module.exports = router;
  

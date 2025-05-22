@@ -107,6 +107,29 @@ const getStudents = async (req, res) => {
     return res.status(500).json({ message: 'Server error while fetching students' });
   }
 };
+
+const editStudent = async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  try {
+    const student = await User.findOne({ where: { id, role: 'student' } });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found!' });
+    }
+
+    // Prevent password update here (optional)
+    if (updateData.password) delete updateData.password;
+
+    await student.update(updateData);
+
+    return res.status(200).json({ message: 'Student updated successfully!', student });
+  } catch (error) {
+    console.error('Edit student error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const addTeacher = async (req, res) => {
   const {
     fullName,
@@ -166,10 +189,35 @@ const getTeachers = async (req, res) => {
     return res.status(500).json({ message: 'Server error while fetching teachers' });
   }
 };
+
+const editTeacher = async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  try {
+    const teacher = await Teacher.findByPk(id);
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found!' });
+    }
+
+    // Prevent password update here (optional)
+    if (updateData.password) delete updateData.password;
+
+    await teacher.update(updateData);
+
+    return res.status(200).json({ message: 'Teacher updated successfully!', teacher });
+  } catch (error) {
+    console.error('Edit teacher error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   login,
   registerStudent,
   getStudents,
+  editStudent,
   addTeacher,
-  getTeachers
+  getTeachers,
+  editTeacher
 };
