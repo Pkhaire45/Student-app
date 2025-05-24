@@ -42,6 +42,10 @@ const studentLogin = async (req, res) => {
 };
 const getTestsForStudent = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: User ID missing from token.' });
+    }
+
     const userId = req.user.id; // assuming JWT middleware adds user info to req
     const user = await User.findByPk(userId);
 
