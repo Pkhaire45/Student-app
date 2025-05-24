@@ -13,5 +13,6 @@ router.post('/add-teacher', authController.addTeacher);
 router.get('/teachers', authController.getTeachers);
 router.put('/teachers/:id', authController.editTeacher);
 router.put('/students/:id', authController.editStudent);
+router.post('/create-test', authController.createTest); // Create test with questions
 module.exports = router;
  

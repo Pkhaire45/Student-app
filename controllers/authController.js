@@ -4,7 +4,7 @@ require('dotenv').config(); // Load .env file
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User , Teacher} = require('../models'); // Assuming User model is in models/
-
+const { Test, Question, Option } = require('../models');
 // Secret key for JWT (now from .env file)
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -211,6 +211,39 @@ const editTeacher = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const createTest = async (req, res) => {
+  const { testTitle, description, subject, class: className, questions } = req.body;
+  // questions: [{ questionText, options: [opt1, opt2, opt3, opt4], correctOption }]
+  try {
+    const test = await Test.create({
+      testTitle,
+      description,
+      subject,
+      class: className
+    });
+
+    for (const q of questions) {
+      const question = await Question.create({
+        testId: test.id,
+        questionText: q.questionText,
+        correctOption: q.correctOption // 1,2,3,4
+      });
+
+      for (let i = 0; i < 4; i++) {
+        await Option.create({
+          questionId: question.id,
+          optionText: q.options[i],
+          optionNumber: i + 1
+        });
+      }
+    }
+
+    return res.status(201).json({ message: 'Test created with questions!', testId: test.id });
+  } catch (error) {
+    console.error('Create test error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   login,
@@ -219,5 +252,6 @@ module.exports = {
   editStudent,
   addTeacher,
   getTeachers,
-  editTeacher
+  editTeacher,
+  createTest
 };
