@@ -3,7 +3,10 @@ module.exports = (sequelize, DataTypes) => {
     testTitle: DataTypes.STRING,
     description: DataTypes.TEXT,
     subject: DataTypes.STRING,
-    class: DataTypes.STRING
+    class: DataTypes.STRING,
+    duration: DataTypes.INTEGER, // duration in minutes
+    dueDate: DataTypes.DATEONLY, // only date (YYYY-MM-DD)
+    dueTime: DataTypes.TIME      // only time (HH:mm:ss)
   }, { tableName: 'Tests', timestamps: true });
 
   Test.associate = models => {

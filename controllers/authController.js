@@ -212,14 +212,17 @@ const editTeacher = async (req, res) => {
   }
 };
 const createTest = async (req, res) => {
-  const { testTitle, description, subject, class: className, questions } = req.body;
+  const { testTitle, description, subject, class: className, duration, dueDate, dueTime, questions } = req.body;
   // questions: [{ questionText, options: [opt1, opt2, opt3, opt4], correctOption }]
   try {
     const test = await Test.create({
       testTitle,
       description,
       subject,
-      class: className
+      class: className,
+      duration,   // in minutes
+      dueDate,    // format: YYYY-MM-DD
+      dueTime     // format: HH:mm:ss
     });
 
     for (const q of questions) {
