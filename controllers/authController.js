@@ -110,7 +110,7 @@ const getStudents = async (req, res) => {
 
 const editStudent = async (req, res) => {
   const { id } = req.params;
-  const updateData = req.body;
+  const updateData = req.body || {};
 
   try {
     const student = await User.findOne({ where: { id, role: 'student' } });
