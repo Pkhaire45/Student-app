@@ -248,6 +248,34 @@ const createTest = async (req, res) => {
   }
 };
 
+const getAllTests = async (req, res) => {
+  try {
+    const tests = await Test.findAll({
+      include: [
+        {
+          model: Question,
+          as: 'questions',
+          include: [
+            {
+              model: Option,
+              as: 'options'
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!tests || tests.length === 0) {
+      return res.status(404).json({ message: 'No tests found!' });
+    }
+
+    return res.status(200).json({ tests });
+  } catch (error) {
+    console.error('Error fetching all tests:', error);
+    return res.status(500).json({ message: 'Server error while fetching tests' });
+  }
+};
+
 module.exports = {
   login,
   registerStudent,
@@ -256,5 +284,6 @@ module.exports = {
   addTeacher,
   getTeachers,
   editTeacher,
-  createTest
+  createTest,
+   getAllTests
 };
