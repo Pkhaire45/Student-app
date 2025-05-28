@@ -15,5 +15,7 @@ router.put('/teachers/:id', authController.editTeacher);
 router.put('/students/:id', authController.editStudent);
 router.post('/create-test', authController.createTest); // Create test with questions
 router.get('/tests', authController.getAllTests); // Get test by ID with questions and options
+router.delete('/students/:id', authController.deleteStudent); // Delete student by ID
+router.delete('/teachers/:id', authController.deleteTeacher); // Delete teacher by ID
 module.exports = router;
  

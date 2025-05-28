@@ -276,6 +276,42 @@ const getAllTests = async (req, res) => {
   }
 };
 
+const deleteStudent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const student = await User.findOne({ where: { id, role: 'student' } });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found!' });
+    }
+
+    await student.destroy();
+
+    return res.status(200).json({ message: 'Student deleted successfully!' });
+  } catch (error) {
+    console.error('Delete student error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const deleteTeacher = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const teacher = await Teacher.findByPk(id);
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher not found!' });
+    }
+
+    await teacher.destroy();
+
+    return res.status(200).json({ message: 'Teacher deleted successfully!' });
+  } catch (error) {
+    console.error('Delete teacher error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   login,
   registerStudent,
@@ -285,5 +321,7 @@ module.exports = {
   getTeachers,
   editTeacher,
   createTest,
-   getAllTests
+  getAllTests,
+  deleteStudent,
+  deleteTeacher
 };
