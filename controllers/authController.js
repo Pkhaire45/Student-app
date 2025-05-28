@@ -311,6 +311,52 @@ const deleteTeacher = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const editTest = async (req, res) => {
+  const { id } = req.params;
+  const { testTitle, description, subject, class: className, duration, dueDate, dueTime } = req.body;
+
+  try {
+    const test = await Test.findByPk(id);
+
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found!' });
+    }
+
+    await test.update({
+      testTitle,
+      description,
+      subject,
+      class: className,
+      duration,
+      dueDate,
+      dueTime
+    });
+
+    return res.status(200).json({ message: 'Test updated successfully!', test });
+  } catch (error) {
+    console.error('Edit test error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const deleteTest = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const test = await Test.findByPk(id);
+
+    if (!test) {
+      return res.status(404).json({ message: 'Test not found!' });
+    }
+
+    await test.destroy();
+
+    return res.status(200).json({ message: 'Test deleted successfully!' });
+  } catch (error) {
+    console.error('Delete test error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   login,
@@ -323,5 +369,7 @@ module.exports = {
   createTest,
   getAllTests,
   deleteStudent,
-  deleteTeacher
+  deleteTeacher,
+   editTest,
+  deleteTest
 };

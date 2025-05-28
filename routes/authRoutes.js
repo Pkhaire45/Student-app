@@ -17,5 +17,7 @@ router.post('/create-test', authController.createTest); // Create test with ques
 router.get('/tests', authController.getAllTests); // Get test by ID with questions and options
 router.delete('/students/:id', authController.deleteStudent); // Delete student by ID
 router.delete('/teachers/:id', authController.deleteTeacher); // Delete teacher by ID
+router.put('/tests/:id', authController.editTest); // Update test by ID
+router.delete('/tests/:id', authController.deleteTest); // Delete test by ID
 module.exports = router;
  
