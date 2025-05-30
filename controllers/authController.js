@@ -4,7 +4,7 @@ require('dotenv').config(); // Load .env file
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User , Teacher} = require('../models'); // Assuming User model is in models/
-const { Test, Question, Option } = require('../models');
+const { Test, Question, Option,Attendance } = require('../models');
 // Secret key for JWT (now from .env file)
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -357,6 +357,57 @@ const deleteTest = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const recordAttendance = async (req, res) => {
+  const { studentId, date, isPresent, remark } = req.body; // Added remark
+
+  try {
+    const student = await User.findOne({ where: { id: studentId, role: 'student' } });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found!' });
+    }
+
+    const attendance = await Attendance.create({
+      studentId,
+      date,
+      isPresent,
+      remark // Added remark
+    });
+
+    return res.status(201).json({ message: 'Attendance recorded successfully!', attendance });
+  } catch (error) {
+    console.error('Record attendance error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+const getAttendance = async (req, res) => {
+  const { studentId } = req.query;
+
+  try {
+    let whereClause = {};
+
+    if (studentId) {
+      whereClause.studentId = studentId;
+    }
+
+    const attendances = await Attendance.findAll({
+      where: whereClause,
+      include: [{
+        model: User,
+        as: 'student',
+        attributes: ['id', 'fullName', 'username']
+      }]
+    });
+
+    if (!attendances || attendances.length === 0) {
+      return res.status(404).json({ message: 'No attendance records found!' });
+    }
+
+    return res.status(200).json({ attendances });
+  } catch (error) {
+    console.error('Get attendance error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   login,
@@ -371,5 +422,7 @@ module.exports = {
   deleteStudent,
   deleteTeacher,
    editTest,
-  deleteTest
+  deleteTest,
+  recordAttendance,
+  getAttendance
 };
