@@ -21,5 +21,6 @@ router.put('/tests/:id', authController.editTest); // Update test by ID
 router.delete('/tests/:id', authController.deleteTest); // Delete test by ID
 router.post('/attendance', authController.recordAttendance);// Mark attendance
 router.get('/attendance', authController.getAttendance) 
+router.put('/questions/:questionId', authController.editQuestion);
 module.exports = router;
  

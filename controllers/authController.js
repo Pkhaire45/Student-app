@@ -409,6 +409,42 @@ const getAttendance = async (req, res) => {
   }
 };
 
+
+const editQuestion = async (req, res) => {
+  const { questionId } = req.params;
+  const { questionText, options, correctOption } = req.body;
+  // options: [opt1, opt2, opt3, opt4], correctOption: 1-4
+
+  try {
+    const question = await Question.findByPk(questionId, {
+      include: [{ model: Option, as: 'options' }]
+    });
+
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found!' });
+    }
+
+    // Update question text and correct option
+    await question.update({
+      questionText,
+      correctOption
+    });
+
+    // Update options (assuming always 4 options)
+    for (let i = 0; i < 4; i++) {
+      const option = question.options.find(opt => opt.optionNumber === i + 1);
+      if (option) {
+        await option.update({ optionText: options[i] });
+      }
+    }
+
+    return res.status(200).json({ message: 'Question updated successfully!', question });
+  } catch (error) {
+    console.error('Edit question error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   login,
   registerStudent,
@@ -424,5 +460,6 @@ module.exports = {
    editTest,
   deleteTest,
   recordAttendance,
-  getAttendance
+  getAttendance,
+   editQuestion
 };
