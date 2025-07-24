@@ -43,7 +43,7 @@ const login = async (req, res) => {
 
 // Register Student
 const registerStudent = async (req, res) => {
-  const {
+  let {
     fullName,
     username,
     email,
@@ -60,21 +60,33 @@ const registerStudent = async (req, res) => {
   } = req.body;
 
   try {
+    // Trim and sanitize inputs
+    username = username?.trim();
+    fullName = fullName?.trim();
+    email = email?.trim();
+    contactNumber = contactNumber?.trim();
+    guardianName = guardianName?.trim();
+    guardianContactNumber = guardianContactNumber?.trim();
+    guardianRelation = guardianRelation?.trim();
+
+    // Validate username format
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores.' });
+    }
+
     // Check if the student already exists
     const existingStudent = await User.findOne({ where: { username } });
     if (existingStudent) {
       return res.status(400).json({ message: 'Student already exists!' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create the student
+    // Create the student (with plain password)
     const student = await User.create({
       fullName,
       username,
       email,
-      password: hashedPassword,
+      password, // PLAIN TEXT (INSECURE)
       role,
       standard,
       year,
@@ -97,8 +109,7 @@ const registerStudent = async (req, res) => {
 const getStudents = async (req, res) => {
   try {
     const students = await User.findAll({
-      where: { role: 'student' },
-      attributes: { exclude: ['password'] } // Hides password from the response
+      where: { role: 'student' }// Hides password from the response
     });
 
     return res.status(200).json({ students });

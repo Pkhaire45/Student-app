@@ -61,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
 
-    // 🔥 NEW FIELDS 🔥
+    // 🔥 NEW FELDS I🔥
     contactNumber: {
       type: DataTypes.STRING(15),
       allowNull: true

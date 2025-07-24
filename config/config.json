@@ -3,22 +3,25 @@
     "username": "studentuser",
     "password": "Student@1234",
     "database": "studentdb",
-    "host": "0.0.0.0",
-    "dialect": "mysql"
+    "host": "13.203.203.147",
+    "dialect": "mysql",
+    "logging": false
   },
   "test": {
     "username": "studentuser",
     "password": "Student@1234",
     "database": "studentdb",
-    "host": "0.0.0.0",
-    "dialect": "mysql"
+    "host": "13.203.203.147",
+    "dialect": "mysql",
+    "logging": false
   },
   "production": {
     "username": "studentuser",
     "password": "Student@1234",
     "database": "studentdb",
-    "host": "0.0.0.0",
-    "dialect": "mysql"
+    "host": "13.203.203.147",
+    "dialect": "mysql",
+    "logging": false
   }
 }
 
