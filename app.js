@@ -6,7 +6,8 @@ const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes'); // For Admin & Student login routes
 const studentRoutes = require('./routes/studentRoutes'); // For Student login routes
 const { sequelize } = require('./models'); // Importing sequelize instance
-const assignmentRoutes = require('./routes/assignmentRoutes'); // Importing assignment routes
+const assignmentRoutes = require('./routes/assignmentRoutes'); 
+const submissionRoutes = require('./routes/submissionRoutes'); // Importing submission routes
 const app = express();
 
 // Middleware
@@ -16,7 +17,9 @@ app.use('/uploads', express.static('uploads'));
 // Routes
 app.use('/api/admin', authRoutes); // Admin & Student login routes
 app.use('/api/student', studentRoutes); // For student-specific routes
-app.use('/api/assignments',assignmentRoutes ); // Assignment routes
+app.use('/api/assignments',assignmentRoutes ); 
+app.use('/api/submissions', submissionRoutes); // Submission routes
+// Assignment routes
 // Test route to check if app is running
 app.get('/', (req, res) => {
   res.send('App is up and running!');

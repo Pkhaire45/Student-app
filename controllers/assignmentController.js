@@ -3,20 +3,14 @@ const { Assignment } = require('../models');
 // Create Assignment (POST)
 const createAssignment = async (req, res) => {
   try {
-    // Build attachments array from uploaded files
-    const attachments = req.files.map(file => ({
+    const attachments = req.files ? req.files.map(file => ({
       file_name: file.originalname,
       file_url: `/uploads/assignments/${file.filename}`,
       file_type: file.mimetype,
       file_size: file.size
-    }));
+    })) : [];
 
-    // Merge attachments into request body
-    const assignmentData = {
-      ...req.body,
-      attachments
-    };
-
+    const assignmentData = { ...req.body, attachments };
     const assignment = await Assignment.create(assignmentData);
     return res.status(201).json({ message: 'Assignment created!', assignment });
   } catch (error) {
@@ -57,10 +51,36 @@ const updateAssignment = async (req, res) => {
     if (!assignment) {
       return res.status(404).json({ message: 'Assignment not found' });
     }
-    await assignment.update(req.body);
+    // If new files are uploaded, handle them
+    let attachments = assignment.attachments || [];
+    if (req.files && req.files.length > 0) {
+      const newFiles = req.files.map(file => ({
+        file_name: file.originalname,
+        file_url: `/uploads/assignments/${file.filename}`,
+        file_type: file.mimetype,
+        file_size: file.size
+      }));
+      attachments = attachments.concat(newFiles);
+    }
+    await assignment.update({ ...req.body, attachments });
     return res.status(200).json({ message: 'Assignment updated!', assignment });
   } catch (error) {
     console.error('Update assignment error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete Assignment (DELETE)
+const deleteAssignment = async (req, res) => {
+  try {
+    const assignment = await Assignment.findByPk(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+    await assignment.destroy();
+    return res.status(200).json({ message: 'Assignment deleted!' });
+  } catch (error) {
+    console.error('Delete assignment error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -69,5 +89,6 @@ module.exports = {
   createAssignment,
   getAllAssignments,
   getAssignmentById,
-  updateAssignment
+  updateAssignment,
+  deleteAssignment
 };

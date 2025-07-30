@@ -88,5 +88,6 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true // adds createdAt and updatedAt automatically
   });
 
+
   return User;
 };

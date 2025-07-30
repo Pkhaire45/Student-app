@@ -46,6 +46,9 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: true
     }
   });
+  
+ 
+
 
   return Assignment;
 };

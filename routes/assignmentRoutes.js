@@ -10,7 +10,7 @@ router.post(
   assignmentController.createAssignment
 );
 router.get('/', assignmentController.getAllAssignments);
-router.get('/assignments/:id', assignmentController.getAssignmentById);
-router.put('/assignments/:id', assignmentController.updateAssignment);
+router.get('/:id', assignmentController.getAssignmentById);
+router.put('/:id', assignmentController.updateAssignment);
 
 module.exports = router;

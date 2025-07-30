@@ -1,33 +1,43 @@
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
+const basename = path.basename(__filename);
+
+// ✅ Initialize Sequelize
 const sequelize = new Sequelize({
-  host: '13.203.203.147',  // Your DB host
-  dialect: 'mysql',   // Dialect (MySQL)
-  username: 'studentuser',   // Your DB username
-  password: 'Student@1234',       // Your DB password
-  database: 'studentdb',   // Your DB name
+  host: '13.203.203.147',
+  dialect: 'mysql',
+  username: 'studentuser',
+  password: 'Student@1234',
+  database: 'studentdb',
 });
 
 const db = {};
 
-// Dynamically load all models and instantiate them correctly
 fs.readdirSync(__dirname)
-  .filter((file) => file !== 'index.js')  // Skip the index.js file
+  .filter((file) => {
+    return (
+      file.indexOf('.') !== 0 &&
+      file !== basename &&
+      file.slice(-3) === '.js'
+    );
+  })
   .forEach((file) => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    // Fix: Use `model` class properly
-    db[model.name] = model;
-  });
+    const modelImport = require(path.join(__dirname, file));
+    console.log(`${file}: typeof export =`, typeof modelImport);
 
-// Set up model associations (if any)
-Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
+    if (typeof modelImport !== 'function') {
+      throw new Error(
+        `❌ Model file "${file}" does not export a function: module.exports = (sequelize, DataTypes) => { ... }`
+      );
+    }
+
+    const model = modelImport(sequelize, Sequelize.DataTypes);
+    db[model.name] = model;
+    console.log(`✅ Loaded model: ${model.name}`);
+  });
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-module.exports = db;  // Export the db object, which contains the sequelize instance
+module.exports = db;
