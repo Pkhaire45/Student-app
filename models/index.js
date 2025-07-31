@@ -24,7 +24,6 @@ fs.readdirSync(__dirname)
   })
   .forEach((file) => {
     const modelImport = require(path.join(__dirname, file));
-    console.log(`${file}: typeof export =`, typeof modelImport);
 
     if (typeof modelImport !== 'function') {
       throw new Error(
@@ -34,8 +33,15 @@ fs.readdirSync(__dirname)
 
     const model = modelImport(sequelize, Sequelize.DataTypes);
     db[model.name] = model;
-    console.log(`✅ Loaded model: ${model.name}`);
   });
+
+
+// ✅ Call associate() for each model
+Object.keys(db).forEach((modelName) => {
+  if (typeof db[modelName].associate === 'function') {
+    db[modelName].associate(db); // This sets up associations like Test.hasMany(Question)
+  }
+});
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
