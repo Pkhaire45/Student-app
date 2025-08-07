@@ -173,10 +173,7 @@ const addTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Teacher already exists!' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create the teacher
+    // Create the teacher (password stored as-is, no hashing)
     const teacher = await Teacher.create({
       fullName,
       sex,
@@ -188,7 +185,7 @@ const addTeacher = async (req, res) => {
       previousEmployer,
       username,
       email,
-      password: hashedPassword
+      password
     });
 
     return res.status(201).json({ message: 'Teacher created successfully!', teacher });
@@ -199,11 +196,10 @@ const addTeacher = async (req, res) => {
   }
 };
 
+
 const getTeachers = async (req, res) => {
   try {
-    const teachers = await Teacher.findAll({
-      attributes: { exclude: ['password'] } // Exclude password from response
-    });
+    const teachers = await Teacher.findAll();
     return res.status(200).json({ teachers });
   } catch (error) {
     console.error('Error fetching teachers:', error);

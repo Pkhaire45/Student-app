@@ -78,53 +78,104 @@ const getTestsForStudent = async (req, res) => {
   }
 };
 const solveTest = async (req, res) => {
-  const { testId, answers } = req.body;
-  // answers: [{ questionId: 1, selectedOption: 2 }, ...]
+ const { testId, answers } = req.body;
+  const studentId = req.user.id; 
+
+  const t = await sequelize.transaction();
 
   try {
-    const userId = req.user.id;
-    const user = await User.findByPk(userId);
-
-    if (!user || user.role !== 'student') {
-      return res.status(403).json({ message: 'Unauthorized' });
+    // Check if the student has already attempted this test
+    const existingAttempt = await TestAttempt.findOne({ where: { studentId, testId } });
+    if (existingAttempt) {
+      return res.status(400).json({ message: 'You have already submitted this test.' });
     }
 
-    // Check if the test exists and is assigned to the student's class
-    const test = await Test.findOne({
-      where: { id: testId, class: user.standard }
-    });
+    // Prepare answers for bulk creation in the TestAttempt table
+    const attemptData = answers.map(answer => ({
+      studentId,
+      testId,
+      questionId: answer.questionId,
+      selectedOption: answer.selectedOption,
+    }));
 
-    if (!test) {
-      return res.status(404).json({ message: 'Test not found or not assigned to your class.' });
-    }
+    // Save all answers to the database
+    await TestAttempt.bulkCreate(attemptData, { transaction: t });
 
-    let correct = 0;
-    let total = answers.length;
+    await t.commit();
 
-    for (const ans of answers) {
-      // Ensure the question belongs to this test
-      const question = await Question.findOne({
-        where: { id: ans.questionId, testId: test.id }
-      });
-      if (question && question.correctOption === ans.selectedOption) {
-        correct++;
-      }
-    }
+    return res.status(201).json({ message: 'Test submitted successfully!' });
 
-    return res.status(200).json({
-      total,
-      correct,
-      message: `You answered ${correct} out of ${total} questions correctly.`
-    });
   } catch (error) {
-    console.error('Error solving test:', error);
+    await t.rollback();
+    console.error('Error submitting test:', error);
+    return res.status(500).json({ message: 'Server error during test submission.' });
+  }
+};
+const getTestResult = async (req, res) => {
+  const { testId, studentId } = req.params;
+
+  try {
+    // 1. Fetch the test questions with correct answers
+    const test = await Test.findByPk(testId, {
+      include: {
+        model: Question,
+        as: 'questions',
+        attributes: ['id', 'questionText', 'correctOption'],
+      },
+    });
+    if (!test) return res.status(404).json({ message: 'Test not found!' });
+
+    // 2. Fetch the student's saved answers from the TestAttempt table
+    const attempts = await TestAttempt.findAll({
+      where: { testId, studentId },
+    });
+    if (attempts.length === 0) {
+      return res.status(404).json({ message: 'No attempt found for this student and test.' });
+    }
+    
+    // 3. Fetch student details
+    const student = await User.findByPk(studentId, { attributes: ['id', 'fullName'] });
+
+    // 4. Calculate the score by comparing attempts to correct answers
+    let score = 0;
+    const detailedResults = test.questions.map(question => {
+      const attempt = attempts.find(a => a.questionId === question.id);
+      const isCorrect = attempt ? attempt.selectedOption === question.correctOption : false;
+
+      if (isCorrect) {
+        score++;
+      }
+
+      return {
+        questionText: question.questionText,
+        selectedOption: attempt ? attempt.selectedOption : null,
+        correctOption: question.correctOption,
+        isCorrect,
+      };
+    });
+    
+    const totalQuestions = test.questions.length;
+    const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+
+    // 5. Build and send the final result object
+    return res.status(200).json({
+      student,
+      test: { id: test.id, testTitle: test.testTitle },
+      score,
+      totalQuestions,
+      percentage: parseFloat(percentage.toFixed(2)),
+      detailedResults,
+    });
+
+  } catch (error) {
+    console.error('Error getting test result:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
 
-
 module.exports = {
   studentLogin,
   getTestsForStudent,
-   solveTest 
+   solveTest ,
+   getTestResult
 };
