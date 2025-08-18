@@ -70,7 +70,7 @@ const registerStudent = async (req, res) => {
   } = req.body;
 
   try {
-    // Trim and sanitize inputs
+    // Trim inputs only (no extra modifications)
     username = username?.trim();
     fullName = fullName?.trim();
     email = email?.trim();
@@ -79,24 +79,33 @@ const registerStudent = async (req, res) => {
     guardianContactNumber = guardianContactNumber?.trim();
     guardianRelation = guardianRelation?.trim();
 
-    // Validate username format
+    // ✅ Ensure username exists
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required.' });
+    }
+
+    // ✅ Username format check
     const usernameRegex = /^[a-zA-Z0-9_]+$/;
     if (!usernameRegex.test(username)) {
-      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores.' });
+      return res.status(400).json({
+        message: 'Username can only contain letters, numbers, and underscores.'
+      });
     }
 
-    // Check if the student already exists
+    // ✅ Check uniqueness (exact match only)
     const existingStudent = await User.findOne({ where: { username } });
     if (existingStudent) {
-      return res.status(400).json({ message: 'Student already exists!' });
+      return res.status(400).json({
+        message: 'Username already exists! Please try a different one.'
+      });
     }
 
-    // Create the student (with plain password)
+    // Create student with the exact username provided
     const student = await User.create({
       fullName,
-      username,
+      username, // exact username typed by user
       email,
-      password, // PLAIN TEXT (INSECURE)
+      password, // ⚠️ still plain text (should hash in production)
       role,
       standard,
       year,
@@ -108,13 +117,17 @@ const registerStudent = async (req, res) => {
       guardianRelation
     });
 
-    return res.status(201).json({ message: 'Student created successfully!', student });
+    return res.status(201).json({
+      message: 'Student created successfully!',
+      student
+    });
 
   } catch (error) {
     console.error('Register error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 const getStudents = async (req, res) => {
   try {
@@ -167,13 +180,21 @@ const addTeacher = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if the teacher already exists
-    const existingTeacher = await Teacher.findOne({ where: { username } });
+    // Take the username exactly as provided, trimmed only
+    const cleanUsername = username.trim();
+
+    // Check if the teacher already exists with the exact username
+    const existingTeacher = await Teacher.findOne({
+      where: { username: cleanUsername }
+    });
+
     if (existingTeacher) {
-      return res.status(400).json({ message: 'Teacher already exists!' });
+      return res.status(400).json({
+        message: 'Username already exists! Please try a different one.'
+      });
     }
 
-    // Create the teacher (password stored as-is, no hashing)
+    // Create the teacher with the exact username entered
     const teacher = await Teacher.create({
       fullName,
       sex,
@@ -183,18 +204,22 @@ const addTeacher = async (req, res) => {
       teachingSubject,
       totalExperience,
       previousEmployer,
-      username,
+      username: cleanUsername, // Save only the trimmed username
       email,
       password
     });
 
-    return res.status(201).json({ message: 'Teacher created successfully!', teacher });
+    return res.status(201).json({
+      message: 'Teacher created successfully!',
+      teacher
+    });
 
   } catch (error) {
     console.error('Register teacher error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 const getTeachers = async (req, res) => {
