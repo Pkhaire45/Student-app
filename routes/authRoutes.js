@@ -22,5 +22,6 @@ router.delete('/tests/:id', authController.deleteTest); // Delete test by ID
 router.post('/attendance', authController.recordAttendance);// Mark attendance
 router.get('/attendance', authController.getAttendance) 
 router.put('/questions/:questionId', authController.editQuestion);
+router.delete('/question/:questionId', authController.deleteQuestion);
 module.exports = router;
  

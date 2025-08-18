@@ -461,6 +461,32 @@ const editQuestion = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const deleteQuestion = async (req, res) => {
+  const { questionId } = req.params;
+
+  try {
+    const question = await Question.findByPk(questionId, {
+      include: [{ model: Option, as: 'options' }]
+    });
+
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found!' });
+    }
+
+    // Delete all options first
+    for (const option of question.options) {
+      await option.destroy();
+    }
+
+    // Delete the question
+    await question.destroy();
+
+    return res.status(200).json({ message: 'Question deleted successfully!' });
+  } catch (error) {
+    console.error('Delete question error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   login,
@@ -478,5 +504,6 @@ module.exports = {
   deleteTest,
   recordAttendance,
   getAttendance,
-   editQuestion
+   editQuestion,
+   deleteQuestion
 };
