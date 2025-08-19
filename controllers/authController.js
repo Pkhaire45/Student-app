@@ -51,62 +51,18 @@ const login = async (req, res) => {
   }
 };
 
-// Register Student
+
 const registerStudent = async (req, res) => {
-  let {
-    fullName,
-    username,
-    email,
-    password,
-    role = 'student',
-    standard,
-    year,
-    stream,
-    contactNumber,
-    dateOfBirth,
-    guardianName,
-    guardianContactNumber,
-    guardianRelation
-  } = req.body;
-
   try {
-    // Trim inputs only (no extra modifications)
-    username = username?.trim();
-    fullName = fullName?.trim();
-    email = email?.trim();
-    contactNumber = contactNumber?.trim();
-    guardianName = guardianName?.trim();
-    guardianContactNumber = guardianContactNumber?.trim();
-    guardianRelation = guardianRelation?.trim();
+    // 📩 Debug log (see exactly what frontend sends)
+    console.log("📩 Raw Request Body:", req.body);
 
-    // ✅ Ensure username exists
-    if (!username) {
-      return res.status(400).json({ message: 'Username is required.' });
-    }
-
-    // ✅ Username format check
-    const usernameRegex = /^[a-zA-Z0-9_]+$/;
-    if (!usernameRegex.test(username)) {
-      return res.status(400).json({
-        message: 'Username can only contain letters, numbers, and underscores.'
-      });
-    }
-
-    // ✅ Check uniqueness (exact match only)
-    const existingStudent = await User.findOne({ where: { username } });
-    if (existingStudent) {
-      return res.status(400).json({
-        message: 'Username already exists! Please try a different one.'
-      });
-    }
-
-    // Create student with the exact username provided
-    const student = await User.create({
+    let {
       fullName,
-      username, // exact username typed by user
+      username,
       email,
-      password, // ⚠️ still plain text (should hash in production)
-      role,
+      password,
+      role = "student",
       standard,
       year,
       stream,
@@ -115,16 +71,67 @@ const registerStudent = async (req, res) => {
       guardianName,
       guardianContactNumber,
       guardianRelation
+    } = req.body;
+
+    // 🔒 Ensure username exists
+    if (!username) {
+      return res.status(400).json({ message: "Username is required." });
+    }
+
+    // ✨ Normalize + trim (remove hidden chars, spaces)
+    username = username.normalize("NFKC").trim();
+
+    // ✅ Force use of the exact username user typed (ignore auto-generated ones)
+    if (username.includes("_") && username.match(/\d{13}$/)) {
+      return res.status(400).json({
+        message: "Invalid auto-generated username detected. Please choose your own username."
+      });
+    }
+
+    // 🔍 Username format check
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({
+        message: "Username can only contain letters, numbers, and underscores."
+      });
+    }
+
+    // 🔍 Uniqueness check
+    const existingStudent = await User.findOne({ where: { username } });
+    if (existingStudent) {
+      return res.status(400).json({
+        message: "Username already exists! Please try a different one."
+      });
+    }
+
+    // 🔒 Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Create student with EXACT username
+    const student = await User.create({
+      fullName: fullName?.trim(),
+      username, // ✅ always use user-provided username
+      email: email?.trim(),
+      password: hashedPassword,
+      role,
+      standard,
+      year,
+      stream,
+      contactNumber: contactNumber?.trim(),
+      dateOfBirth,
+      guardianName: guardianName?.trim(),
+      guardianContactNumber: guardianContactNumber?.trim(),
+      guardianRelation: guardianRelation?.trim()
     });
 
     return res.status(201).json({
-      message: 'Student created successfully!',
+      message: "Student created successfully!",
       student
     });
 
   } catch (error) {
-    console.error('Register error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("❌ Register error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
