@@ -52,6 +52,7 @@ const login = async (req, res) => {
 };
 
 
+
 const registerStudent = async (req, res) => {
   try {
     // 📩 Debug log (see exactly what frontend sends)
@@ -81,7 +82,7 @@ const registerStudent = async (req, res) => {
     // ✨ Normalize + trim (remove hidden chars, spaces)
     username = username.normalize("NFKC").trim();
 
-    // ✅ Force use of the exact username user typed (ignore auto-generated ones)
+    // ✅ Block auto-generated style usernames
     if (username.includes("_") && username.match(/\d{13}$/)) {
       return res.status(400).json({
         message: "Invalid auto-generated username detected. Please choose your own username."
@@ -104,15 +105,12 @@ const registerStudent = async (req, res) => {
       });
     }
 
-    // 🔒 Hash password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // ✅ Create student with EXACT username
     const student = await User.create({
       fullName: fullName?.trim(),
-      username, // ✅ always use user-provided username
+      username, // ✅ exact username from user
       email: email?.trim(),
-      password: hashedPassword,
+      password, // ⚠️ plain text — not secure, but as requested
       role,
       standard,
       year,
@@ -134,6 +132,7 @@ const registerStudent = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 const getStudents = async (req, res) => {
