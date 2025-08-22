@@ -31,9 +31,20 @@ const submitAssignment = async (req, res) => {
 const getSubmissionsByAssignment = async (req, res) => {
   try {
     const submissions = await Submission.findAll({
-      where: { assignment_id: req.params.assignment_id }
+      where: { assignment_id: req.params.assignment_id },
+      include: [
+        {
+          model: db.User,
+          attributes: ['id', 'fullName', 'username', 'email']
+        }
+      ]
     });
-    return res.status(200).json({ submissions });
+    // Attach user name to each submission
+    const submissionsWithUser = submissions.map(sub => ({
+      ...sub.toJSON(),
+      userName: sub.User ? sub.User.fullName : null
+    }));
+    return res.status(200).json({ submissions: submissionsWithUser });
   } catch (error) {
     console.error('Get submissions by assignment error:', error);
     return res.status(500).json({ message: 'Server error' });
