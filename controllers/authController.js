@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User , Teacher} = require('../models'); // Assuming User model is in models/
 const { Test, Question, Option,Attendance } = require('../models');
+const { TestAttempt } = require('../models');
 // Secret key for JWT (now from .env file)
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -518,6 +519,77 @@ const deleteQuestion = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const getAllTestSubmissions = async (req, res) => {
+  const { testId } = req.params;
+
+  try {
+    // Fetch the test and its questions
+    const test = await Test.findByPk(testId, {
+      include: {
+        model: Question,
+        as: 'questions',
+        attributes: ['id', 'questionText', 'correctOption'],
+      },
+    });
+    if (!test) return res.status(404).json({ message: 'Test not found!' });
+
+    // Get all attempts for this test
+    const attempts = await TestAttempt.findAll({ where: { testId } });
+
+    if (attempts.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for this test.' });
+    }
+
+    // Group attempts by studentId
+    const attemptsByStudent = {};
+    attempts.forEach(attempt => {
+      if (!attemptsByStudent[attempt.studentId]) {
+        attemptsByStudent[attempt.studentId] = [];
+      }
+      attemptsByStudent[attempt.studentId].push(attempt);
+    });
+
+    // For each student, calculate their result
+    const results = [];
+    for (const studentId of Object.keys(attemptsByStudent)) {
+      const studentAttempts = attemptsByStudent[studentId];
+      const student = await User.findByPk(studentId, { attributes: ['id', 'fullName'] });
+
+      let score = 0;
+      const detailedResults = test.questions.map(question => {
+        const attempt = studentAttempts.find(a => a.questionId === question.id);
+        const isCorrect = attempt ? attempt.selectedOption === question.correctOption : false;
+        if (isCorrect) score++;
+        return {
+          questionText: question.questionText,
+          selectedOption: attempt ? attempt.selectedOption : null,
+          correctOption: question.correctOption,
+          isCorrect,
+        };
+      });
+
+      const totalQuestions = test.questions.length;
+      const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+
+      results.push({
+        student,
+        score,
+        totalQuestions,
+        percentage: parseFloat(percentage.toFixed(2)),
+        detailedResults,
+      });
+    }
+
+    return res.status(200).json({
+      test: { id: test.id, testTitle: test.testTitle },
+      results,
+    });
+
+  } catch (error) {
+    console.error('Error getting all test submissions:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
 module.exports = {
   login,
@@ -536,5 +608,6 @@ module.exports = {
   recordAttendance,
   getAttendance,
    editQuestion,
-   deleteQuestion
+   deleteQuestion,
+   getAllTestSubmissions
 };
