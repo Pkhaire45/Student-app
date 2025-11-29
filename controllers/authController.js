@@ -14,43 +14,41 @@ const login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // Find the user by username (admin, student, or teacher)
     // Try User model first (admin or student)
-    let user = await User.findOne({ where: { username } });
+    let user = await User.findOne({ where: { username, password } }); 
     let userType = null;
 
     if (user) {
-      userType = user.role;
+      userType = user.role; 
     } else {
-      // Try Teacher model
-      user = await Teacher.findOne({ where: { username } });
-      if (user) userType = 'teacher';
+      // Try teacher
+      user = await Teacher.findOne({ where: { username, password } });
+      if (user) userType = "teacher";
     }
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found!' });
-    }
-
-    // Check if password matches
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials!' });
+      return res.status(400).json({ message: "Invalid username or password!" });
     }
 
     // Generate JWT
     const token = jwt.sign(
       { id: user.id, role: userType, username: user.username },
       JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: "30d" }
     );
 
-    return res.status(200).json({ message: 'Login successful!', token, role: userType });
+    return res.status(200).json({
+      message: "Login successful!",
+      token,
+      role: userType
+    });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
