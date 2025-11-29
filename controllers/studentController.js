@@ -13,33 +13,37 @@ const studentLogin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // Find the student by username
-    const student = await User.findOne({ where: { username, role: 'student' } });
+    // Find student with direct username + password match
+    const student = await User.findOne({
+      where: {
+        username,
+        password,   // ⚠️ direct password check since no bcrypt
+        role: 'student'
+      }
+    });
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found!' });
+      return res.status(400).json({ message: 'Invalid username or password!' });
     }
 
-    // Check if password matches
-    const isMatch = await bcrypt.compare(password, student.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials!' });
-    }
-
-    // Generate JWT for the student
+    // Generate JWT
     const token = jwt.sign(
       { id: student.id, role: student.role, username: student.username },
       JWT_SECRET,
-      { expiresIn: '1h' } // expires in 1 hour
+      { expiresIn: '30d' }
     );
 
-    return res.status(200).json({ message: 'Login successful!', token });
+    return res.status(200).json({
+      message: 'Login successful!',
+      token
+    });
 
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 const getTestsForStudent = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
