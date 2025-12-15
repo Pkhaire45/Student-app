@@ -8,6 +8,7 @@ const studentRoutes = require('./routes/studentRoutes'); // For Student login ro
 const { sequelize } = require('./models'); // Importing sequelize instance
 const assignmentRoutes = require('./routes/assignmentRoutes'); 
 const submissionRoutes = require('./routes/submissionRoutes'); // Importing submission routes
+const batchRoutes = require('./routes/batchRoutes');
 const app = express();
 
 // Middleware
@@ -18,7 +19,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/admin', authRoutes); // Admin & Student login routes
 app.use('/api/student', studentRoutes); // For student-specific routes
 app.use('/api/assignments',assignmentRoutes ); 
-app.use('/api/submissions', submissionRoutes); // Submission routes
+app.use('/api/submissions', submissionRoutes);
+app.use("/api/batches",batchRoutes); // Submission routes
 // Assignment routes
 // Test route to check if app is running
 app.get('/', (req, res) => {
