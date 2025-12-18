@@ -212,3 +212,53 @@ exports.getBatchDetailsById = async (req, res) => {
     });
   }
 };
+
+/**
+ * =========================
+ * UPDATE BATCH (ADMIN)
+ * =========================
+ */
+exports.updateBatch = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    const {
+      batchName,
+      standard,
+      stream,
+      academicYear,
+      startDate,
+      endDate,
+      status
+    } = req.body;
+
+    // 1️⃣ Check batch exists
+    const batch = await Batch.findByPk(batchId);
+    if (!batch) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+
+    // 2️⃣ Update only provided fields
+    await batch.update({
+      ...(batchName !== undefined && { batchName }),
+      ...(standard !== undefined && { standard }),
+      ...(stream !== undefined && { stream }),
+      ...(academicYear !== undefined && { academicYear }),
+      ...(startDate !== undefined && { startDate }),
+      ...(endDate !== undefined && { endDate }),
+      ...(status !== undefined && { status })
+    });
+
+    return res.status(200).json({
+      message: 'Batch updated successfully',
+      batch
+    });
+
+  } catch (error) {
+    console.error('Update Batch Error:', error);
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
