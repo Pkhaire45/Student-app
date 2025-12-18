@@ -46,6 +46,12 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'batches',
     timestamps: true
   });
-
+Batch.associate = (models) => {
+    Batch.belongsToMany(models.User, {
+      through: models.StudentBatch,
+      foreignKey: 'batchId',
+      otherKey: 'studentId'
+    });
+  };
   return Batch;
 };

@@ -88,6 +88,13 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true // adds createdAt and updatedAt automatically
   });
 
+User.associate = (models) => {
+  User.belongsToMany(models.Batch, {
+    through: models.StudentBatch,
+    foreignKey: 'studentId',
+    otherKey: 'batchId'
+  });
+};
 
   return User;
 };
