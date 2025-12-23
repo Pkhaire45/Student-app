@@ -4,9 +4,8 @@ const batchController = require('../controllers/batchController');
 
 router.post('/', batchController.createBatch);
 router.get('/', batchController.getAllBatches);
-// Update batch
-router.put('/:batchId', batchController.updateBatch);
 
+router.put('/:batchId', batchController.updateBatch);
 router.delete('/:batchId', batchController.deleteBatch);
 
 router.post('/:batchId/students', batchController.addStudentsToBatch);
