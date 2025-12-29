@@ -259,24 +259,39 @@ const editTeacher = async (req, res) => {
   }
 };
 const createTest = async (req, res) => {
-  const { testTitle, description, subject, class: className, duration, dueDate, dueTime, questions } = req.body;
-  // questions: [{ questionText, options: [opt1, opt2, opt3, opt4], correctOption }]
+  const {
+    testTitle,
+    description,
+    subject,
+    class: className,
+    duration,
+    dueDate,
+    dueTime,
+    batchId,          // ✅ REQUIRED
+    questions
+  } = req.body;
+
+  if (!batchId) {
+    return res.status(400).json({ message: "batchId is required" });
+  }
+
   try {
     const test = await Test.create({
       testTitle,
       description,
       subject,
       class: className,
-      duration,   // in minutes
-      dueDate,    // format: YYYY-MM-DD
-      dueTime     // format: HH:mm:ss
+      duration,
+      dueDate,
+      dueTime,
+      batchId
     });
 
     for (const q of questions) {
       const question = await Question.create({
         testId: test.id,
         questionText: q.questionText,
-        correctOption: q.correctOption // 1,2,3,4
+        correctOption: q.correctOption
       });
 
       for (let i = 0; i < 4; i++) {
@@ -288,40 +303,61 @@ const createTest = async (req, res) => {
       }
     }
 
-    return res.status(201).json({ message: 'Test created with questions!', testId: test.id });
+    return res.status(201).json({
+      message: "Test created and assigned to batch",
+      testId: test.id
+    });
+
   } catch (error) {
-    console.error('Create test error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Create test error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getAllTests = async (req, res) => {
   try {
+    const { role, id: userId } = req.user; // from JWT middleware
+
+    let whereClause = {};
+
+    // 👇 STUDENT: only tests of their batch
+    if (role === "student") {
+      const student = await User.findByPk(userId, {
+        include: {
+          model: Batch,
+          through: { attributes: [] }
+        }
+      });
+
+      if (!student || !student.Batches?.length) {
+        return res.status(404).json({ message: "No batch assigned" });
+      }
+
+      const batchIds = student.Batches.map(b => b.id);
+      whereClause.batchId = batchIds;
+    }
+
     const tests = await Test.findAll({
+      where: whereClause,
       include: [
         {
           model: Question,
-          as: 'questions',
-          include: [
-            {
-              model: Option,
-              as: 'options'
-            }
-          ]
+          as: "questions",
+          include: [{ model: Option, as: "options" }]
         }
-      ]
+      ],
+      order: [["createdAt", "DESC"]]
     });
 
-    if (!tests || tests.length === 0) {
-      return res.status(404).json({ message: 'No tests found!' });
-    }
-
     return res.status(200).json({ tests });
+
   } catch (error) {
-    console.error('Error fetching all tests:', error);
-    return res.status(500).json({ message: 'Server error while fetching tests' });
+    console.error("Get tests error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const deleteStudent = async (req, res) => {
   const { id } = req.params;

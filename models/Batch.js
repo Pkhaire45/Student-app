@@ -52,6 +52,10 @@ Batch.associate = (models) => {
       foreignKey: 'batchId',
       otherKey: 'studentId'
     });
+     Batch.hasMany(models.Test, {
+    foreignKey: "batchId",
+    as: "tests",
+  });
   };
   return Batch;
 };

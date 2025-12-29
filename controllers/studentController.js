@@ -46,75 +46,84 @@ const studentLogin = async (req, res) => {
 
 const getTestsForStudent = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Unauthorized: User ID missing from token.' });
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const userId = req.user.id; // assuming JWT middleware adds user info to req
-    const user = await User.findByPk(userId);
+    const student = await User.findByPk(req.user.id, {
+      include: {
+        model: Batch,
+        through: { attributes: [] }
+      }
+    });
 
-    if (!user || user.role !== 'student') {
-      return res.status(403).json({ message: 'Unauthorized' });
+    if (!student || student.role !== "student") {
+      return res.status(403).json({ message: "Forbidden" });
     }
 
-    const matchingTests = await Test.findAll({
+    if (!student.Batches || student.Batches.length === 0) {
+      return res.status(404).json({ message: "Student not assigned to any batch" });
+    }
+
+    const batchIds = student.Batches.map(b => b.id);
+
+    const tests = await Test.findAll({
       where: {
-        class: user.standard
+        batchId: batchIds
       },
       include: [
         {
           model: Question,
-          as: 'questions',
-          include: [
-            {
-              model: Option,
-              as: 'options'
-            }
-          ]
+          as: "questions",
+          include: [{ model: Option, as: "options" }]
         }
-      ]
+      ],
+      order: [["createdAt", "DESC"]]
     });
 
-    return res.json(matchingTests);
+    return res.status(200).json({ tests });
+
   } catch (error) {
-    console.error('Error fetching tests:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching tests:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
-const solveTest = async (req, res) => {
- const { testId, answers } = req.body;
-  const studentId = req.user.id; 
 
-  const t = await sequelize.transaction();
+const solveTest = async (req, res) => {
+  const { testId, answers } = req.body;
+  const studentId = req.user.id;
+
+  if (!testId || !Array.isArray(answers)) {
+    return res.status(400).json({ message: "Invalid payload" });
+  }
 
   try {
-    // Check if the student has already attempted this test
-    const existingAttempt = await TestAttempt.findOne({ where: { studentId, testId } });
-    if (existingAttempt) {
-      return res.status(400).json({ message: 'You have already submitted this test.' });
+    // Optional: check test existence
+    const test = await Test.findByPk(testId);
+    if (!test) {
+      return res.status(404).json({ message: "Test not found" });
     }
 
-    // Prepare answers for bulk creation in the TestAttempt table
-    const attemptData = answers.map(answer => ({
-      studentId,
-      testId,
-      questionId: answer.questionId,
-      selectedOption: answer.selectedOption,
-    }));
+    // Save / overwrite answers safely
+    for (const ans of answers) {
+      await TestAttempt.upsert({
+        studentId,
+        testId,
+        questionId: ans.questionId,
+        selectedOption: ans.selectedOption
+      });
+    }
 
-    // Save all answers to the database
-    await TestAttempt.bulkCreate(attemptData, { transaction: t });
-
-    await t.commit();
-
-    return res.status(201).json({ message: 'Test submitted successfully!' });
+    return res.status(200).json({
+      message: "Test submitted successfully"
+    });
 
   } catch (error) {
-    await t.rollback();
-    console.error('Error submitting test:', error);
-    return res.status(500).json({ message: 'Server error during test submission.' });
+    console.error("Error submitting test:", error);
+    return res.status(500).json({ message: "Server error during test submission" });
   }
 };
+
 const getTestResult = async (req, res) => {
   const { testId, studentId } = req.params;
 
