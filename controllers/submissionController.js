@@ -1,88 +1,151 @@
-const db = require('../models');
-const Submission = db.Submission; 
+const db = require("../models");
+const { Submission, Assignment, User, Batch } = db;
 
-// Submit Assignment (POST)
+/* ======================================================
+   SUBMIT ASSIGNMENT (Student)
+====================================================== */
 const submitAssignment = async (req, res) => {
   try {
-    const { assignment_id, student_id } = req.body; // or get from req.user if authenticated
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
+    const studentId = req.user.id;
+    const { assignment_id } = req.body;
+
+    if (!assignment_id) {
+      return res.status(400).json({ message: "assignment_id is required" });
     }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    // Fetch assignment
+    const assignment = await Assignment.findByPk(assignment_id);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    // Verify student belongs to assignment batch
+    const student = await User.findByPk(studentId, {
+      include: {
+        model: Batch,
+        through: { attributes: [] }
+      }
+    });
+
+    const batchIds = student.Batches.map(b => b.id);
+    if (!batchIds.includes(assignment.batchId)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    // Prepare files
     const submitted_files = req.files.map(file => ({
       file_name: file.originalname,
       file_url: `/uploads/submissions/${file.filename}`,
       file_type: file.mimetype,
       file_size: file.size
     }));
-    const submission = await Submission.create({
+
+    // Detect late submission
+    const isLate = new Date() > new Date(assignment.due_date);
+
+    // Create or update submission (safe because of UNIQUE constraint)
+    const [submission] = await Submission.upsert({
       assignment_id,
-      student_id,
+      student_id: studentId,
       submitted_files,
-      submission_time: new Date()
+      submission_time: new Date(),
+      status: isLate ? "late" : "submitted"
     });
-    return res.status(201).json({ message: 'Submission successful', submission });
+
+    return res.status(201).json({
+      message: isLate
+        ? "Assignment submitted (late)"
+        : "Assignment submitted successfully",
+      submission
+    });
+
   } catch (error) {
-    console.error('Submit assignment error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Submit assignment error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get all submissions for an assignment (GET)
+/* ======================================================
+   GET ALL SUBMISSIONS FOR AN ASSIGNMENT (Teacher / Admin)
+====================================================== */
 const getSubmissionsByAssignment = async (req, res) => {
   try {
+    const { assignment_id } = req.params;
+
     const submissions = await Submission.findAll({
-      where: { assignment_id: req.params.assignment_id },
+      where: { assignment_id },
       include: [
         {
-          model: db.User,
-          attributes: ['id', 'fullName', 'username', 'email']
+          model: User,
+          as: "student",
+          attributes: ["id", "fullName", "username", "email"]
         }
-      ]
+      ],
+      order: [["submission_time", "DESC"]]
     });
-    // Attach user name to each submission
-    const submissionsWithUser = submissions.map(sub => ({
-      ...sub.toJSON(),
-      userName: sub.User ? sub.User.fullName : null
-    }));
-    return res.status(200).json({ submissions: submissionsWithUser });
+
+    return res.status(200).json({ submissions });
+
   } catch (error) {
-    console.error('Get submissions by assignment error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Get submissions error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get submission by student for an assignment
+/* ======================================================
+   GET STUDENT'S SUBMISSION (Student)
+====================================================== */
 const getSubmissionByStudent = async (req, res) => {
   try {
-    const { assignment_id, student_id } = req.params;
+    const { assignment_id } = req.params;
+    const studentId = req.user.id;
+
     const submission = await Submission.findOne({
-      where: { assignment_id, student_id }
+      where: { assignment_id, student_id: studentId }
     });
+
     if (!submission) {
-      return res.status(404).json({ message: 'Submission not found' });
+      return res.status(404).json({ message: "Submission not found" });
     }
+
     return res.status(200).json({ submission });
+
   } catch (error) {
-    console.error('Get submission by student error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Get submission by student error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// Update submission marks/feedback (PUT)
+/* ======================================================
+   GRADE SUBMISSION (Teacher / Admin)
+====================================================== */
 const updateSubmissionEvaluation = async (req, res) => {
   try {
+    const { marks_obtained, feedback } = req.body;
+
     const submission = await Submission.findByPk(req.params.id);
     if (!submission) {
-      return res.status(404).json({ message: 'Submission not found' });
+      return res.status(404).json({ message: "Submission not found" });
     }
+
     await submission.update({
-      marks_obtained: req.body.marks_obtained,
-      feedback: req.body.feedback
+      marks_obtained,
+      feedback,
+      status: "graded"
     });
-    return res.status(200).json({ message: 'Submission evaluated', submission });
+
+    return res.status(200).json({
+      message: "Submission evaluated successfully",
+      submission
+    });
+
   } catch (error) {
-    console.error('Evaluate submission error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Evaluate submission error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

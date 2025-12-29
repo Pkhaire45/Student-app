@@ -1,16 +1,45 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const upload = require('../middleware/fileUpload');
-const assignmentController = require('../controllers/assignmentController');
 
+const assignmentController = require("../controllers/assignmentController");
+const upload = require("../middleware/fileUpload");
+const auth = require("../middleware/authMiddleware");
 
+// Create assignment
 router.post(
-  '/',
-  upload.array('attachments', 10),
+  "/",
+  auth,
+  upload.array("attachments", 10),
   assignmentController.createAssignment
 );
-router.get('/', assignmentController.getAllAssignments);
-router.get('/:id', assignmentController.getAssignmentById);
-router.put('/:id', assignmentController.updateAssignment);
+
+// Get all assignments
+router.get(
+  "/",
+  auth,
+  assignmentController.getAllAssignments
+);
+
+// Get assignment by id
+router.get(
+  "/:id",
+  auth,
+  assignmentController.getAssignmentById
+);
+
+// Update assignment
+router.put(
+  "/:id",
+  auth,
+  upload.array("attachments", 10),
+  assignmentController.updateAssignment
+);
+
+// Delete assignment
+router.delete(
+  "/:id",
+  auth,
+  assignmentController.deleteAssignment
+);
 
 module.exports = router;

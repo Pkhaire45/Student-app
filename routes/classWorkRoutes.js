@@ -1,39 +1,61 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const controller = require('../controllers/classWorkController');
+const controller = require("../controllers/classWorkController");
+const auth = require("../middleware/authMiddleware");
 
 /**
  * =========================
- * ADMIN ROUTES
+ * WRITE ROUTES (AUTH ONLY)
  * =========================
  */
 
 // Create classwork
-router.post('/', controller.addClassWork);
+router.post(
+  "/",
+  auth,
+  controller.addClassWork
+);
 
 // Update classwork
-router.put('/:id', controller.updateClassWork);
+router.put(
+  "/:id",
+  auth,
+  controller.updateClassWork
+);
 
 // Delete classwork
-router.delete('/:id', controller.deleteClassWork);
+router.delete(
+  "/:id",
+  auth,
+  controller.deleteClassWork
+);
 
 /**
  * =========================
- * READ ROUTES (ADMIN / STUDENT)
+ * READ ROUTES (AUTH ONLY)
  * Order matters: specific → generic
  * =========================
  */
 
 // Get classwork by batch + date
-router.get('/batch/:batchId/date/:date', controller.getClassWorkByBatchAndDate);
-
-// Get classwork by batch + subject
-router.get('/batch/:batchId/subject/:subjectId', controller.getClassWorkBySubject);
+router.get(
+  "/batch/:batchId/date/:date",
+  auth,
+  controller.getClassWorkByBatchAndDate
+);
 
 // Get classwork by batch
-router.get('/batch/:batchId', controller.getClassWorkByBatch);
+router.get(
+  "/batch/:batchId",
+  auth,
+  controller.getClassWorkByBatch
+);
 
 // Get classwork by id (keep LAST)
-router.get('/:id', controller.getClassWorkById);
+router.get(
+  "/:id",
+  auth,
+  controller.getClassWorkById
+);
 
 module.exports = router;

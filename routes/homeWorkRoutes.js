@@ -1,39 +1,61 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const controller = require('../controllers/homeWorkController');
+const controller = require("../controllers/homeWorkController");
+const auth = require("../middleware/authMiddleware");
 
 /**
  * =========================
- * ADMIN ROUTES
+ * WRITE ROUTES (AUTH ONLY)
  * =========================
  */
 
 // Create homework
-router.post('/', controller.addHomeWork);
+router.post(
+  "/",
+  auth,
+  controller.addHomeWork
+);
 
 // Update homework
-router.put('/:id', controller.updateHomeWork);
+router.put(
+  "/:id",
+  auth,
+  controller.updateHomeWork
+);
 
 // Delete homework
-router.delete('/:id', controller.deleteHomeWork);
+router.delete(
+  "/:id",
+  auth,
+  controller.deleteHomeWork
+);
 
 /**
  * =========================
- * READ ROUTES (ADMIN / STUDENT)
+ * READ ROUTES (AUTH ONLY)
  * Order matters: specific → generic
  * =========================
  */
 
 // Get homework by batch + date
-router.get('/batch/:batchId/date/:date', controller.getHomeWorkByBatchAndDate);
-
-// Get homework by batch + subject
-router.get('/batch/:batchId/subject/:subjectId', controller.getHomeWorkBySubject);
+router.get(
+  "/batch/:batchId/date/:date",
+  auth,
+  controller.getHomeWorkByBatchAndDate
+);
 
 // Get homework by batch
-router.get('/batch/:batchId', controller.getHomeWorkByBatch);
+router.get(
+  "/batch/:batchId",
+  auth,
+  controller.getHomeWorkByBatch
+);
 
 // Get homework by id (keep LAST)
-router.get('/:id', controller.getHomeWorkById);
+router.get(
+  "/:id",
+  auth,
+  controller.getHomeWorkById
+);
 
 module.exports = router;

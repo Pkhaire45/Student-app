@@ -1,70 +1,88 @@
-const { ClassWork, Batch, Subject } = require('../models');
+const { ClassWork, Batch, User } = require("../models");
 
 /* =========================
-   ADD CLASSWORK (ADMIN)
+   ADD CLASSWORK (ADMIN / TEACHER)
 ========================= */
 exports.addClassWork = async (req, res) => {
   try {
-    const { batchId, subjectId, workDate, description } = req.body;
+    const { batchId, workDate, description } = req.body;
     const createdBy = req.user.id;
 
-    if (!batchId || !subjectId || !workDate || !description) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (!batchId || !workDate || !description) {
+      return res.status(400).json({ message: "batchId, workDate and description are required" });
     }
 
     const batch = await Batch.findByPk(batchId);
-    if (!batch) return res.status(404).json({ message: 'Batch not found' });
-
-    const subject = await Subject.findByPk(subjectId);
-    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
 
     const classWork = await ClassWork.create({
       batchId,
-      subjectId,
       workDate,
       description,
       createdBy
     });
 
-    res.status(201).json({ message: 'Classwork added', classWork });
+    return res.status(201).json({
+      message: "Classwork added successfully",
+      classWork
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("Add classwork error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 /* =========================
-   UPDATE CLASSWORK (ADMIN)
+   UPDATE CLASSWORK (ADMIN / TEACHER)
 ========================= */
 exports.updateClassWork = async (req, res) => {
   try {
     const { id } = req.params;
-    const { subjectId, workDate, description } = req.body;
+    const { workDate, description } = req.body;
 
     const classWork = await ClassWork.findByPk(id);
-    if (!classWork) return res.status(404).json({ message: 'Classwork not found' });
+    if (!classWork) {
+      return res.status(404).json({ message: "Classwork not found" });
+    }
 
-    await classWork.update({ subjectId, workDate, description });
+    await classWork.update({
+      workDate,
+      description
+    });
 
-    res.json({ message: 'Classwork updated', classWork });
+    return res.json({
+      message: "Classwork updated successfully",
+      classWork
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("Update classwork error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 /* =========================
-   DELETE CLASSWORK (ADMIN)
+   DELETE CLASSWORK (ADMIN / TEACHER)
 ========================= */
 exports.deleteClassWork = async (req, res) => {
   try {
     const { id } = req.params;
 
     const classWork = await ClassWork.findByPk(id);
-    if (!classWork) return res.status(404).json({ message: 'Classwork not found' });
+    if (!classWork) {
+      return res.status(404).json({ message: "Classwork not found" });
+    }
 
     await classWork.destroy();
-    res.json({ message: 'Classwork deleted' });
+
+    return res.json({ message: "Classwork deleted successfully" });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("Delete classwork error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -72,47 +90,78 @@ exports.deleteClassWork = async (req, res) => {
    GET CLASSWORK BY ID
 ========================= */
 exports.getClassWorkById = async (req, res) => {
-  const classWork = await ClassWork.findByPk(req.params.id);
-  if (!classWork) return res.status(404).json({ message: 'Not found' });
-  res.json(classWork);
+  try {
+    const classWork = await ClassWork.findByPk(req.params.id, {
+      include: [
+        {
+          model: Batch,
+          as: "batch",
+          attributes: ["id", "batchName"]
+        },
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "fullName"]
+        }
+      ]
+    });
+
+    if (!classWork) {
+      return res.status(404).json({ message: "Classwork not found" });
+    }
+
+    return res.json(classWork);
+
+  } catch (err) {
+    console.error("Get classwork by id error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 /* =========================
    GET CLASSWORK BY BATCH
 ========================= */
 exports.getClassWorkByBatch = async (req, res) => {
-  const { batchId } = req.params;
+  try {
+    const { batchId } = req.params;
 
-  const data = await ClassWork.findAll({
-    where: { batchId },
-    order: [['workDate', 'DESC']]
-  });
+    const data = await ClassWork.findAll({
+      where: { batchId },
+      order: [["workDate", "DESC"]]
+    });
 
-  res.json({ total: data.length, classworks: data });
+    return res.json({
+      total: data.length,
+      classworks: data
+    });
+
+  } catch (err) {
+    console.error("Get classwork by batch error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 /* =========================
    GET CLASSWORK BY BATCH + DATE
 ========================= */
 exports.getClassWorkByBatchAndDate = async (req, res) => {
-  const { batchId, date } = req.params;
+  try {
+    const { batchId, date } = req.params;
 
-  const data = await ClassWork.findAll({
-    where: { batchId, workDate: date }
-  });
+    const data = await ClassWork.findAll({
+      where: {
+        batchId,
+        workDate: date
+      }
+    });
 
-  res.json({ total: data.length, classworks: data });
-};
+    return res.json({
+      total: data.length,
+      classworks: data
+    });
 
-/* =========================
-   GET CLASSWORK BY SUBJECT
-========================= */
-exports.getClassWorkBySubject = async (req, res) => {
-  const { batchId, subjectId } = req.params;
-
-  const data = await ClassWork.findAll({
-    where: { batchId, subjectId }
-  });
-
-  res.json({ total: data.length, classworks: data });
+  } catch (err) {
+    console.error("Get classwork by batch and date error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
