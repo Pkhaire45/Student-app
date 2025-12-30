@@ -8,6 +8,7 @@ const auth = require("../middleware/authMiddleware");
  * WRITE ROUTES (AUTH ONLY)
  * =========================
  */
+router.get("/", auth, controller.getClassWorks);
 
 // Create classwork
 router.post(

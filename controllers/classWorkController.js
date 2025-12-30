@@ -165,3 +165,54 @@ exports.getClassWorkByBatchAndDate = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+exports.getClassWorks = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      batchId,
+      date
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    const where = {};
+
+    if (batchId) where.batchId = batchId;
+    if (date) where.workDate = date;
+
+    const { count, rows } = await ClassWork.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Batch,
+          as: "batch",
+          attributes: ["id", "batchName"]
+        },
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "fullName"]
+        }
+      ],
+      order: [["workDate", "DESC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    return res.json({
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit),
+      classworks: rows
+    });
+
+  } catch (err) {
+    console.error("Get all classworks error:", err);
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+};
