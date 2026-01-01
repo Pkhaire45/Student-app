@@ -13,9 +13,22 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false
       },
 
-      workDate: {
+      // NEW
+      startDate: {
         type: DataTypes.DATEONLY,
         allowNull: false
+      },
+
+      // NEW
+      endDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false
+      },
+
+      // keep for backward compatibility
+      workDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
       },
 
       description: {
@@ -30,7 +43,15 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       tableName: "homeworks",
-      timestamps: true
+      timestamps: true,
+
+      validate: {
+        endAfterStart() {
+          if (this.endDate < this.startDate) {
+            throw new Error("endDate cannot be before startDate");
+          }
+        }
+      }
     }
   );
 

@@ -1,16 +1,23 @@
 const { HomeWork, Batch, User } = require("../models");
+const { Op } = require("sequelize");
 
 /* =========================
    ADD HOMEWORK (ADMIN / TEACHER)
 ========================= */
 exports.addHomeWork = async (req, res) => {
   try {
-    const { batchId, workDate, description } = req.body;
+    const { batchId, startDate, endDate, description } = req.body;
     const createdBy = req.user.id;
 
-    if (!batchId || !workDate || !description) {
+    if (!batchId || !startDate || !endDate || !description) {
       return res.status(400).json({
-        message: "batchId, workDate and description are required"
+        message: "batchId, startDate, endDate and description are required"
+      });
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({
+        message: "endDate cannot be before startDate"
       });
     }
 
@@ -21,7 +28,10 @@ exports.addHomeWork = async (req, res) => {
 
     const homeWork = await HomeWork.create({
       batchId,
-      workDate,
+      startDate,
+      endDate,
+      // backward compatibility
+      workDate: startDate,
       description,
       createdBy
     });
@@ -46,15 +56,24 @@ exports.addHomeWork = async (req, res) => {
 exports.updateHomeWork = async (req, res) => {
   try {
     const { id } = req.params;
-    const { workDate, description } = req.body;
+    const { startDate, endDate, description } = req.body;
 
     const homeWork = await HomeWork.findByPk(id);
     if (!homeWork) {
       return res.status(404).json({ message: "Homework not found" });
     }
 
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({
+        message: "endDate cannot be before startDate"
+      });
+    }
+
     await homeWork.update({
-      workDate,
+      startDate,
+      endDate,
+      // keep legacy field in sync
+      workDate: startDate || homeWork.workDate,
       description
     });
 
@@ -141,7 +160,7 @@ exports.getHomeWorkByBatch = async (req, res) => {
 
     const data = await HomeWork.findAll({
       where: { batchId },
-      order: [["workDate", "DESC"]]
+      order: [["startDate", "DESC"]]
     });
 
     return res.json({
@@ -159,7 +178,7 @@ exports.getHomeWorkByBatch = async (req, res) => {
 };
 
 /* =========================
-   GET HOMEWORK BY BATCH + DATE
+   GET HOMEWORK BY BATCH + DATE (DATE RANGE)
 ========================= */
 exports.getHomeWorkByBatchAndDate = async (req, res) => {
   try {
@@ -168,7 +187,8 @@ exports.getHomeWorkByBatchAndDate = async (req, res) => {
     const data = await HomeWork.findAll({
       where: {
         batchId,
-        workDate: date
+        startDate: { [Op.lte]: date },
+        endDate: { [Op.gte]: date }
       }
     });
 

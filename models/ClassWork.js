@@ -13,9 +13,22 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false
       },
 
-      workDate: {
+      // NEW
+      startDate: {
         type: DataTypes.DATEONLY,
         allowNull: false
+      },
+
+      // NEW
+      endDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false
+      },
+
+      // (Optional) keep workDate for backward compatibility
+      workDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
       },
 
       description: {

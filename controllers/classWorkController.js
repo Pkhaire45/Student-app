@@ -1,15 +1,24 @@
 const { ClassWork, Batch, User } = require("../models");
+const { Op } = require("sequelize");
 
 /* =========================
    ADD CLASSWORK (ADMIN / TEACHER)
 ========================= */
 exports.addClassWork = async (req, res) => {
   try {
-    const { batchId, workDate, description } = req.body;
+    const { batchId, startDate, endDate, description } = req.body;
     const createdBy = req.user.id;
 
-    if (!batchId || !workDate || !description) {
-      return res.status(400).json({ message: "batchId, workDate and description are required" });
+    if (!batchId || !startDate || !endDate || !description) {
+      return res.status(400).json({
+        message: "batchId, startDate, endDate and description are required"
+      });
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({
+        message: "endDate cannot be before startDate"
+      });
     }
 
     const batch = await Batch.findByPk(batchId);
@@ -19,7 +28,10 @@ exports.addClassWork = async (req, res) => {
 
     const classWork = await ClassWork.create({
       batchId,
-      workDate,
+      startDate,
+      endDate,
+      // optional backward compatibility
+      workDate: startDate,
       description,
       createdBy
     });
@@ -41,15 +53,24 @@ exports.addClassWork = async (req, res) => {
 exports.updateClassWork = async (req, res) => {
   try {
     const { id } = req.params;
-    const { workDate, description } = req.body;
+    const { startDate, endDate, description } = req.body;
 
     const classWork = await ClassWork.findByPk(id);
     if (!classWork) {
       return res.status(404).json({ message: "Classwork not found" });
     }
 
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({
+        message: "endDate cannot be before startDate"
+      });
+    }
+
     await classWork.update({
-      workDate,
+      startDate,
+      endDate,
+      // keep workDate in sync if needed
+      workDate: startDate || classWork.workDate,
       description
     });
 
@@ -127,7 +148,7 @@ exports.getClassWorkByBatch = async (req, res) => {
 
     const data = await ClassWork.findAll({
       where: { batchId },
-      order: [["workDate", "DESC"]]
+      order: [["startDate", "DESC"]]
     });
 
     return res.json({
@@ -142,7 +163,7 @@ exports.getClassWorkByBatch = async (req, res) => {
 };
 
 /* =========================
-   GET CLASSWORK BY BATCH + DATE
+   GET CLASSWORK BY BATCH + DATE (DATE RANGE)
 ========================= */
 exports.getClassWorkByBatchAndDate = async (req, res) => {
   try {
@@ -151,7 +172,8 @@ exports.getClassWorkByBatchAndDate = async (req, res) => {
     const data = await ClassWork.findAll({
       where: {
         batchId,
-        workDate: date
+        startDate: { [Op.lte]: date },
+        endDate: { [Op.gte]: date }
       }
     });
 
@@ -166,6 +188,9 @@ exports.getClassWorkByBatchAndDate = async (req, res) => {
   }
 };
 
+/* =========================
+   GET CLASSWORKS (FILTER + PAGINATION)
+========================= */
 exports.getClassWorks = async (req, res) => {
   try {
     const {
@@ -176,11 +201,15 @@ exports.getClassWorks = async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-
     const where = {};
 
     if (batchId) where.batchId = batchId;
-    if (date) where.workDate = date;
+
+    // date inside range
+    if (date) {
+      where.startDate = { [Op.lte]: date };
+      where.endDate = { [Op.gte]: date };
+    }
 
     const { count, rows } = await ClassWork.findAndCountAll({
       where,
@@ -196,7 +225,7 @@ exports.getClassWorks = async (req, res) => {
           attributes: ["id", "fullName"]
         }
       ],
-      order: [["workDate", "DESC"]],
+      order: [["startDate", "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
