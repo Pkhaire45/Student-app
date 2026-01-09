@@ -4,8 +4,8 @@ require('dotenv').config(); // Load .env file
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User , Teacher} = require('../models'); // Assuming User model is in models/
-const { Test, Question, Option,Attendance } = require('../models');
-const { TestAttempt } = require('../models');
+const { Test, Question, Option, Attendance } = require('../models');
+const { TestAttempt, Batch } = require('../models');
 // Secret key for JWT (now from .env file)
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -317,6 +317,10 @@ const createTest = async (req, res) => {
 
 const getAllTests = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authorization required' });
+    }
+
     const { role, id: userId } = req.user; // from JWT middleware
 
     let whereClause = {};
