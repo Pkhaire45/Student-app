@@ -288,16 +288,41 @@ const createTest = async (req, res) => {
     });
 
     for (const q of questions) {
+      const { questionText, correctOption, options } = q;
+
+      // Validate options array
+      if (!Array.isArray(options) || options.length === 0) {
+        // cleanup and return error so caller fixes payload
+        await test.destroy();
+        return res.status(400).json({ message: 'Each question must include a non-empty options array' });
+      }
+
+      // Validate correctOption if provided
+      if (correctOption && (typeof correctOption !== 'number' || correctOption < 1 || correctOption > options.length)) {
+        await test.destroy();
+        return res.status(400).json({ message: 'correctOption must be a number between 1 and the number of provided options' });
+      }
+
       const question = await Question.create({
         testId: test.id,
-        questionText: q.questionText,
-        correctOption: q.correctOption
+        questionText,
+        correctOption
       });
 
-      for (let i = 0; i < 4; i++) {
+      // Create options; accept either strings or objects { optionText } / { text }
+      for (let i = 0; i < options.length; i++) {
+        let optionVal = options[i];
+        if (optionVal && typeof optionVal === 'object') {
+          optionVal = optionVal.optionText || optionVal.text || optionVal.value || JSON.stringify(optionVal);
+        } else if (optionVal === undefined || optionVal === null) {
+          optionVal = '';
+        } else {
+          optionVal = String(optionVal);
+        }
+
         await Option.create({
           questionId: question.id,
-          optionText: q.options[i],
+          optionText: optionVal,
           optionNumber: i + 1
         });
       }
