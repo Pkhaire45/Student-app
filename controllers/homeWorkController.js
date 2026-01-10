@@ -205,3 +205,64 @@ exports.getHomeWorkByBatchAndDate = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   GET HOMEWORKS (LIST / FILTERS)
+   Supports query params: batchId, date, startDate, endDate, creatorId, page, limit
+========================= */
+exports.getHomeWorks = async (req, res) => {
+  try {
+    const { batchId, date, startDate, endDate, creatorId } = req.query;
+    let { page = 1, limit = 20 } = req.query;
+
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (batchId) where.batchId = batchId;
+    if (creatorId) where.createdBy = creatorId;
+
+    if (date) {
+      // return homeworks that cover the specified date
+      where.startDate = { [Op.lte]: date };
+      where.endDate = { [Op.gte]: date };
+    } else {
+      if (startDate) where.startDate = { [Op.gte]: startDate };
+      if (endDate) where.endDate = { [Op.lte]: endDate };
+    }
+
+    const { count, rows } = await HomeWork.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Batch,
+          as: "batch",
+          attributes: ["id", "batchName"]
+        },
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "fullName"]
+        }
+      ],
+      order: [["startDate", "DESC"]],
+      limit,
+      offset
+    });
+
+    return res.json({
+      total: count,
+      page,
+      limit,
+      homeworks: rows
+    });
+
+  } catch (err) {
+    console.error("Get homeworks error:", err);
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+};

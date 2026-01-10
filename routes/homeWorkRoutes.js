@@ -51,6 +51,14 @@ router.get(
   controller.getHomeWorkByBatch
 );
 
+// Get homeworks (list / filters)
+// supports query params: batchId, date, startDate, endDate, creatorId, page, limit
+router.get(
+  "/",
+  auth,
+  controller.getHomeWorks
+);
+
 // Get homework by id (keep LAST)
 router.get(
   "/:id",
