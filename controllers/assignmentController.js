@@ -102,6 +102,63 @@ const getAllAssignments = async (req, res) => {
   }
 };
 
+const getAssignmentsByBatch = async (req, res) => {
+  const { batchId } = req.params;
+
+  if (!batchId) {
+    return res.status(400).json({ message: "batchId parameter is required" });
+  }
+
+  try {
+    // Ensure batch exists
+    const batch = await Batch.findByPk(batchId);
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    // Students can only access assignments for their own batch(es)
+    const whereClause = { batchId };
+    if (req.user?.role === "student") {
+      const student = await User.findByPk(req.user.id, {
+        include: {
+          model: Batch,
+          through: { attributes: [] }
+        }
+      });
+
+      if (!student || !student.Batches?.length) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const studentBatchIds = student.Batches.map(b => b.id.toString());
+      if (!studentBatchIds.includes(batchId.toString())) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Only show active assignments to students
+      whereClause.is_active = true;
+    }
+
+    const assignments = await Assignment.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Batch,
+          as: "batch",
+          attributes: ["id", "batchName", "standard"]
+        }
+      ],
+      order: [["due_date", "ASC"]]
+    });
+
+    return res.status(200).json({ assignments });
+
+  } catch (error) {
+    console.error("Get assignments by batch error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 /* ======================================================
    GET ASSIGNMENT BY ID
    - Student can access only if belongs to the batch
@@ -202,6 +259,7 @@ const deleteAssignment = async (req, res) => {
 module.exports = {
   createAssignment,
   getAllAssignments,
+  getAssignmentsByBatch,
   getAssignmentById,
   updateAssignment,
   deleteAssignment

@@ -387,6 +387,57 @@ const getAllTests = async (req, res) => {
   }
 };
 
+const getTestsByBatch = async (req, res) => {
+  const { batchId } = req.params;
+
+  if (!batchId) {
+    return res.status(400).json({ message: "batchId parameter is required" });
+  }
+
+  try {
+    // Ensure batch exists
+    const batch = await Batch.findByPk(batchId);
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    // Students can only access tests for their own batch(s)
+    if (req.user?.role === "student") {
+      const student = await User.findByPk(req.user.id, {
+        include: {
+          model: Batch,
+          through: { attributes: [] }
+        }
+      });
+
+      if (!student || !student.Batches?.length) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const studentBatchIds = student.Batches.map(b => b.id.toString());
+      if (!studentBatchIds.includes(batchId.toString())) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+    }
+
+    const tests = await Test.findAll({
+      where: { batchId },
+      include: [
+        {
+          model: Question,
+          as: "questions",
+          include: [{ model: Option, as: "options" }]
+        }
+      ],
+      order: [["createdAt", "DESC"]]
+    });
+
+    return res.status(200).json({ tests });
+  } catch (error) {
+    console.error("Get tests by batch error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 const deleteStudent = async (req, res) => {
   const { id } = req.params;
@@ -664,6 +715,7 @@ module.exports = {
   editTeacher,
   createTest,
   getAllTests,
+  getTestsByBatch,
   deleteStudent,
   deleteTeacher,
    editTest,

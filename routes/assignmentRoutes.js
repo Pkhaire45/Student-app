@@ -20,6 +20,13 @@ router.get(
   assignmentController.getAllAssignments
 );
 
+// Get assignments by batch id
+router.get(
+  "/batch/:batchId",
+  auth,
+  assignmentController.getAssignmentsByBatch
+);
+
 // Get assignment by id
 router.get(
   "/:id",
