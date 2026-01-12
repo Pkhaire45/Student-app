@@ -17,6 +17,7 @@ router.put('/students/:id', authController.editStudent);
 // Protected test routes
 router.post('/create-test', auth, authController.createTest); // Create test with questions
 router.get('/tests', auth, authController.getAllTests); // Get test by ID with questions and options
+router.get('/tests/batch/:batchId', auth, authController.getTestsByBatch); // Get tests for a specific batch
 router.delete('/students/:id', authController.deleteStudent); // Delete student by ID
 router.delete('/teachers/:id', authController.deleteTeacher); // Delete teacher by ID
 router.put('/tests/:id', auth, authController.editTest);
