@@ -52,6 +52,7 @@ const login = async (req, res) => {
 
 
 
+
 const registerStudent = async (req, res) => {
   try {
     // 📩 Debug log (see exactly what frontend sends)
@@ -128,6 +129,51 @@ const registerStudent = async (req, res) => {
 
   } catch (error) {
     console.error("❌ Register error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Register Admin endpoint
+const registerAdmin = async (req, res) => {
+  try {
+    let {
+      fullName,
+      username,
+      email,
+      password
+    } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ message: "Username is required." });
+    }
+    username = username.normalize("NFKC").trim();
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({
+        message: "Username can only contain letters, numbers, and underscores."
+      });
+    }
+    // Uniqueness check
+    const existingAdmin = await User.findOne({ where: { username } });
+    if (existingAdmin) {
+      return res.status(400).json({
+        message: "Username already exists! Please try a different one."
+      });
+    }
+    // Create admin
+    const admin = await User.create({
+      fullName: fullName?.trim(),
+      username,
+      email: email?.trim(),
+      password, // ⚠️ plain text — not secure, but as requested
+      role: "admin"
+    });
+    return res.status(201).json({
+      message: "Admin created successfully!",
+      admin
+    });
+  } catch (error) {
+    console.error("❌ Register admin error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -708,6 +754,7 @@ const getAllTestSubmissions = async (req, res) => {
 module.exports = {
   login,
   registerStudent,
+  registerAdmin,
   getStudents,
   editStudent,
   addTeacher,
@@ -718,11 +765,11 @@ module.exports = {
   getTestsByBatch,
   deleteStudent,
   deleteTeacher,
-   editTest,
+  editTest,
   deleteTest,
   recordAttendance,
   getAttendance,
-   editQuestion,
-   deleteQuestion,
-   getAllTestSubmissions
+  editQuestion,
+  deleteQuestion,
+  getAllTestSubmissions
 };

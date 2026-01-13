@@ -21,17 +21,20 @@ const createAssignment = async (req, res) => {
       return res.status(400).json({ message: "batchId is required" });
     }
 
-    // Handle attachments
-    const attachments = req.files
-      ? req.files.map(file => ({
-          file_name: file.originalname,
-          file_url: `/uploads/assignments/${file.filename}`,
-          file_type: file.mimetype,
-          file_size: file.size
-        }))
-      : [];
 
-    const assignment = await Assignment.create({
+    // Handle attachments (ensure array or null, not string)
+    let attachments = [];
+    if (req.files && Array.isArray(req.files)) {
+      attachments = req.files.map(file => ({
+        file_name: file.originalname,
+        file_url: `/uploads/assignments/${file.filename}`,
+        file_type: file.mimetype,
+        file_size: file.size
+      }));
+    }
+
+    // If Assignment.attachments is a JSON/ARRAY type, store as array. If STRING, store as JSON string.
+    let assignmentData = {
       title,
       description,
       subject,
@@ -39,10 +42,18 @@ const createAssignment = async (req, res) => {
       total_marks,
       assignment_type,
       instructions,
-      attachments,
       batchId,
       created_by: req.user.id
-    });
+    };
+    // Check model definition if attachments is string or array/json
+    // For safety, store as JSON string if not array
+    if (Assignment.rawAttributes && Assignment.rawAttributes.attachments && Assignment.rawAttributes.attachments.type && Assignment.rawAttributes.attachments.type.key === 'STRING') {
+      assignmentData.attachments = JSON.stringify(attachments);
+    } else {
+      assignmentData.attachments = attachments;
+    }
+
+    const assignment = await Assignment.create(assignmentData);
 
     return res.status(201).json({
       message: "Assignment created and assigned to batch",
