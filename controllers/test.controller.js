@@ -1,6 +1,6 @@
 const Test = require("../models/Test");
 const Question = require("../models/Question");
-const TestAttempt = require("../models/TestAttempt");
+const TestAttempt = require("../models/testAttempt");
 const Student = require("../models/Student");
 
 /**
