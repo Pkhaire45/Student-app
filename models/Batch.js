@@ -1,65 +1,63 @@
-module.exports = (sequelize, DataTypes) => {
-  const Batch = sequelize.define('Batch', {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
+const mongoose = require("mongoose");
+
+const batchSchema = new mongoose.Schema(
+  {
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
     },
 
     batchName: {
-      type: DataTypes.STRING(50),
-      allowNull: false
+      type: String,
+      required: true,
+      trim: true
     },
 
     standard: {
-      type: DataTypes.STRING(30),
-      allowNull: false
+      type: String,
+      required: true
     },
 
     stream: {
-      type: DataTypes.STRING(50),
-      allowNull: true
+      type: String
     },
 
     academicYear: {
-      type: DataTypes.STRING(20),
-      allowNull: false
+      type: String,
+      required: true
     },
 
     startDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
+      type: Date,
+      required: true
     },
 
     endDate: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
+      type: Date
     },
 
     status: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-      defaultValue: 'active'
-    }
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active"
+    },
 
-  }, {
-    tableName: 'batches',
-    timestamps: true
-  });
-Batch.associate = (models) => {
-    Batch.belongsToMany(models.User, {
-      through: models.StudentBatch,
-      foreignKey: 'batchId',
-      otherKey: 'studentId'
-    });
-     Batch.hasMany(models.Test, {
-    foreignKey: "batchId",
-    as: "tests",
-  });
-  Batch.hasMany(models.Assignment, {
-    foreignKey: "batchId",
-    as: "assignments"
-  });
-  };
-  return Batch;
-};
+    studentIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Student",
+        index: true
+      }
+    ],
+
+    teacherId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Teacher"
+    }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Batch", batchSchema, "batches"); // ✅ THIS FIXES IT

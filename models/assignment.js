@@ -1,81 +1,82 @@
-module.exports = (sequelize, DataTypes) => {
-  const Assignment = sequelize.define(
-    "Assignment",
-    {
-      title: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
+const mongoose = require("mongoose");
 
-      description: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-
-      subject: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-
-      due_date: {
-        type: DataTypes.DATE,
-        allowNull: false
-      },
-
-      total_marks: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      },
-
-      assignment_type: {
-        type: DataTypes.STRING, // document / project / homework
-        allowNull: false
-      },
-
-      attachments: {
-        type: DataTypes.JSON,
-        allowNull: true
-      },
-
-      instructions: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-
-      created_by: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      },
-
-      // ✅ THIS is the key
-      batchId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: "batches",
-          key: "id"
-        },
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE"
-      },
-
-      is_active: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true
-      }
+const assignmentSchema = new mongoose.Schema(
+  {
+    // 🔐 Multi-tenant isolation
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
     },
-    {
-      tableName: "Assignments",
-      timestamps: true
+
+    // 🏫 Batch reference
+    batchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+      index: true
+    },
+
+    // 🧑‍🏫 Created by (Admin / Teacher)
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Teacher", // or Admin
+      required: true
+    },
+
+    // 📝 Assignment details
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    description: {
+      type: String
+    },
+
+    subject: {
+      type: String,
+      required: true
+    },
+
+    dueDate: {
+      type: Date,
+      required: true
+    },
+
+    totalMarks: {
+      type: Number,
+      required: true
+    },
+
+    assignmentType: {
+      type: String, // document / project / homework
+      required: true
+    },
+
+    instructions: {
+      type: String
+    },
+
+    // 📎 Attachments (replaces WorkAttachment table)
+    attachments: [
+      {
+        fileUrl: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
+
+    isActive: {
+      type: Boolean,
+      default: true
     }
-  );
-
-  Assignment.associate = (models) => {
-    Assignment.belongsTo(models.Batch, {
-      foreignKey: "batchId",
-      as: "batch"
-    });
-  };
-
-  return Assignment;
-};
+  },
+  {
+    timestamps: true
+  }
+);

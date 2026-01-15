@@ -1,63 +1,66 @@
-module.exports = (sequelize, DataTypes) => {
-  const ClassWork = sequelize.define(
-    "ClassWork",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-      },
+const mongoose = require("mongoose");
 
-      batchId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      },
-
-      // NEW
-      startDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-      },
-
-      // NEW
-      endDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-      },
-
-      // (Optional) keep workDate for backward compatibility
-      workDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
-      },
-
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: false
-      },
-
-      createdBy: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      }
+const classWorkSchema = new mongoose.Schema(
+  {
+    // 🔐 Multi-tenant isolation
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
     },
-    {
-      tableName: "classworks",
-      timestamps: true
-    }
-  );
 
-  ClassWork.associate = (models) => {
-    ClassWork.belongsTo(models.Batch, {
-      foreignKey: "batchId",
-      as: "batch"
-    });
+    // 🏫 Batch reference
+    batchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+      index: true
+    },
 
-    ClassWork.belongsTo(models.User, {
-      foreignKey: "createdBy",
-      as: "creator"
-    });
-  };
+    // 🗓️ Classwork duration
+    startDate: {
+      type: Date,
+      required: true
+    },
 
-  return ClassWork;
-};
+    endDate: {
+      type: Date,
+      required: true
+    },
+
+    // 🕒 Backward compatibility (optional)
+    workDate: {
+      type: Date
+    },
+
+    // 📝 Work content
+    description: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    // 🧑‍🏫 Created by (Teacher / Admin)
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true
+      // ref can be Teacher or Admin (polymorphic by design)
+    },
+
+    // 📎 Optional attachments (Mongo-native)
+    attachments: [
+      {
+        fileUrl: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ]
+  },
+  {
+    timestamps: true
+  }
+);

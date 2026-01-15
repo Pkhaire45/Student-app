@@ -1,71 +1,66 @@
-module.exports = (sequelize, DataTypes) => {
-  const HomeWork = sequelize.define(
-    "HomeWork",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-      },
+const mongoose = require("mongoose");
 
-      batchId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      },
-
-      // NEW
-      startDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-      },
-
-      // NEW
-      endDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: false
-      },
-
-      // keep for backward compatibility
-      workDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true
-      },
-
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: false
-      },
-
-      createdBy: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-      }
+const homeWorkSchema = new mongoose.Schema(
+  {
+    // 🔐 Multi-tenant isolation
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
     },
-    {
-      tableName: "homeworks",
-      timestamps: true,
 
-      validate: {
-        endAfterStart() {
-          if (this.endDate < this.startDate) {
-            throw new Error("endDate cannot be before startDate");
-          }
+    // 🏫 Batch reference
+    batchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+      index: true
+    },
+
+    // 🗓️ Homework duration
+    startDate: {
+      type: Date,
+      required: true
+    },
+
+    endDate: {
+      type: Date,
+      required: true
+    },
+
+    // 🕒 Backward compatibility (optional)
+    workDate: {
+      type: Date
+    },
+
+    // 📝 Homework content
+    description: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    // 🧑‍🏫 Created by (Teacher / Admin)
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true
+      // ref intentionally flexible (Teacher/Admin)
+    },
+
+    // 📎 Optional attachments (future-proof)
+    attachments: [
+      {
+        fileUrl: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
         }
       }
-    }
-  );
-
-  HomeWork.associate = (models) => {
-    HomeWork.belongsTo(models.Batch, {
-      foreignKey: "batchId",
-      as: "batch"
-    });
-
-    HomeWork.belongsTo(models.User, {
-      foreignKey: "createdBy",
-      as: "creator"
-    });
-  };
-
-  return HomeWork;
-};
+    ]
+  },
+  {
+    timestamps: true
+  }
+);

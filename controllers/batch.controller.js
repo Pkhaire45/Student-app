@@ -1,0 +1,201 @@
+const Batch = require("../models/Batch");
+const Student = require("../models/Student");
+
+/**
+ * =========================
+ * CREATE BATCH (ADMIN)
+ * =========================
+ */
+exports.createBatch = async (req, res) => {
+  try {
+    const {
+      batchName,
+      standard,
+      stream,
+      academicYear,
+      startDate,
+      endDate
+    } = req.body;
+
+    if (!batchName || !standard || !academicYear || !startDate) {
+      return res.status(400).json({
+        message: "Required fields missing"
+      });
+    }
+
+    const batch = await Batch.create({
+      instituteId: req.instituteId,
+      batchName,
+      standard,
+      stream,
+      academicYear,
+      startDate,
+      endDate
+    });
+
+    return res.status(201).json({
+      message: "Batch created successfully",
+      batch
+    });
+  } catch (error) {
+    console.error("Create batch error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * =========================
+ * GET ALL BATCHES
+ * =========================
+ */
+exports.getAllBatches = async (req, res) => {
+  try {
+    const batches = await Batch.find({
+      instituteId: req.instituteId
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({ batches });
+  } catch (error) {
+    console.error("Get batches error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * =========================
+ * GET BATCH BY ID (WITH STUDENTS)
+ * =========================
+ */
+exports.getBatchDetailsById = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    const batch = await Batch.findOne({
+      _id: batchId,
+      instituteId: req.instituteId
+    }).populate({
+      path: "studentIds",
+      select: "fullName username email standard stream"
+    });
+
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    return res.status(200).json({ batch });
+  } catch (error) {
+    console.error("Get batch details error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * =========================
+ * ADD STUDENTS TO BATCH
+ * =========================
+ */
+exports.addStudentsToBatch = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+    const { studentIds } = req.body;
+
+    if (!Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        message: "studentIds must be a non-empty array"
+      });
+    }
+
+    const batch = await Batch.findOne({
+      _id: batchId,
+      instituteId: req.instituteId
+    });
+
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    // validate students belong to same institute
+    const students = await Student.find({
+      _id: { $in: studentIds },
+      instituteId: req.instituteId
+    });
+
+    if (students.length !== studentIds.length) {
+      return res.status(400).json({
+        message: "One or more students are invalid"
+      });
+    }
+
+    // add students safely (no duplicates)
+    await Batch.updateOne(
+      { _id: batchId },
+      { $addToSet: { studentIds: { $each: studentIds } } }
+    );
+
+    return res.status(200).json({
+      message: "Students added to batch successfully"
+    });
+  } catch (error) {
+    console.error("Add students error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * =========================
+ * UPDATE BATCH (ADMIN)
+ * =========================
+ */
+exports.updateBatch = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    const batch = await Batch.findOneAndUpdate(
+      {
+        _id: batchId,
+        instituteId: req.instituteId
+      },
+      req.body,
+      { new: true }
+    );
+
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    return res.status(200).json({
+      message: "Batch updated successfully",
+      batch
+    });
+  } catch (error) {
+    console.error("Update batch error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * =========================
+ * DELETE BATCH (ADMIN)
+ * =========================
+ */
+exports.deleteBatch = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    const deleted = await Batch.findOneAndDelete({
+      _id: batchId,
+      instituteId: req.instituteId
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    return res.status(200).json({
+      message: "Batch deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete batch error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

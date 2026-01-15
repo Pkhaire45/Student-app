@@ -1,14 +1,56 @@
-module.exports = (sequelize, DataTypes) => {
-  const Question = sequelize.define('Question', {
-    testId: DataTypes.INTEGER,
-    questionText: DataTypes.TEXT,
-    correctOption: DataTypes.INTEGER
-  }, { tableName: 'Questions', timestamps: true });
+const mongoose = require("mongoose");
 
-  Question.associate = models => {
-    Question.belongsTo(models.Test, { foreignKey: 'testId' });
-    Question.hasMany(models.Option, { foreignKey: 'questionId', as: 'options' });
-  };
+const optionSchema = new mongoose.Schema(
+  {
+    optionText: {
+      type: String,
+      required: true
+    },
+    optionNumber: {
+      type: Number,
+      required: true
+    }
+  },
+  { _id: false }
+);
 
-  return Question;
-};
+const questionSchema = new mongoose.Schema(
+  {
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
+    },
+
+    testId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Test",
+      required: true,
+      index: true
+    },
+
+    questionText: {
+      type: String,
+      required: true
+    },
+
+    correctOption: {
+      type: Number,
+      required: true
+    },
+
+    options: {
+      type: [optionSchema],
+      validate: {
+        validator: (v) => v.length >= 2,
+        message: "At least 2 options required"
+      }
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+module.exports = mongoose.model("Question", questionSchema);

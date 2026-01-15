@@ -1,33 +1,50 @@
-module.exports = (sequelize, DataTypes) => {
-  const Attendance = sequelize.define('Attendance', {
+const mongoose = require("mongoose");
+
+const attendanceSchema = new mongoose.Schema(
+  {
+    // 🔐 Multi-tenant isolation
+    instituteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institute",
+      required: true,
+      index: true
+    },
+
+    // 🎓 Student reference
     studentId: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
+      index: true
     },
+
+    // 🏫 Batch reference (CRITICAL for real apps)
+    batchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+      index: true
+    },
+
+    // 📅 Attendance date (one per day)
     date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
+      type: Date,
+      required: true
     },
+
+    // ✅ Status
     isPresent: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
+      type: Boolean,
+      default: false
     },
-    remark: { // Added remark field
-      type: DataTypes.STRING,
-      allowNull: true // Remark is optional
+
+    // 📝 Optional remark
+    remark: {
+      type: String,
+      trim: true
     }
-  }, {
-    tableName: 'Attendances',
+  },
+  {
     timestamps: true
-  });
-
-  Attendance.associate = models => {
-    Attendance.belongsTo(models.User, {
-      foreignKey: 'studentId',
-      as: 'student'
-    });
-  };
-
-  return Attendance;
-};
+  }
+);
