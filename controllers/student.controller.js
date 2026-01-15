@@ -4,7 +4,7 @@ const Student = require("../models/Student");
 const Batch = require("../models/Batch");
 const Test = require("../models/Test");
 const Question = require("../models/Question");
-const TestAttempt = require("../models/TestAttempt");
+const TestAttempt = require("../models/testAttempt");
 const generateToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: "30d"
