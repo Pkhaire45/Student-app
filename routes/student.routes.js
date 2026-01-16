@@ -13,7 +13,7 @@ router.post(
 );
 
 // 🔐 Student login (plain password)
-router.post("/login", auth, studentController.studentLogin);
+router.post("/login", studentController.studentLogin);
 
 // 📚 Get tests for logged-in student
 router.get(

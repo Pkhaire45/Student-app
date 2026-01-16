@@ -72,46 +72,102 @@ const generateToken = (payload) =>
 
 exports.login = async (req, res) => {
   try {
-    let { role, username, password } = req.body;
+    let { role, username, password, instituteCode } = req.body;
 
     if (!role || !username || !password) {
-      return res.status(400).json({ message: "Role, username and password required" });
+      return res.status(400).json({
+        message: "Role, username and password required"
+      });
     }
 
     role = role.toUpperCase();
     username = String(username).trim();
 
     let user;
+    let instituteId = null;
 
+    // ================= ADMIN LOGIN =================
     if (role === "ADMIN") {
       user = await Admin.findOne({
         email: username.toLowerCase()
       }).select("+password");
-    } else {
-      return res.status(400).json({ message: "Only ADMIN supported for now" });
+
+      if (!user) {
+        return res.status(400).json({
+          message: "Invalid username or password"
+        });
+      }
+
+      instituteId = user.instituteId;
     }
 
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
+    // ================= STUDENT LOGIN =================
+    else if (role === "STUDENT") {
+      if (!instituteCode) {
+        return res.status(400).json({
+          message: "Institute code required"
+        });
+      }
+
+      const institute = await Institute.findOne({
+        code: instituteCode
+      });
+
+      if (!institute) {
+        return res.status(404).json({
+          message: "Invalid institute code"
+        });
+      }
+
+      instituteId = institute._id;
+
+      user = await Student.findOne({
+        username,
+        instituteId
+      }).select("+password");
+
+      if (!user) {
+        return res.status(400).json({
+          message: "Invalid username or password"
+        });
+      }
     }
 
+    // ================= INVALID ROLE =================
+    else {
+      return res.status(400).json({
+        message: "Invalid role"
+      });
+    }
+
+    // ================= PASSWORD CHECK =================
     if (String(user.password).trim() !== String(password).trim()) {
-      return res.status(400).json({ message: "Wrong password" });
+      return res.status(400).json({
+        message: "Invalid username or password"
+      });
     }
 
+    // ================= TOKEN =================
     const token = generateToken({
       userId: user._id,
       role,
-      instituteId: user.instituteId
+      instituteId
     });
 
-    return res.json({ token, role });
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      role
+    });
 
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Login failed" });
+    console.error("Login error:", err);
+    return res.status(500).json({
+      message: "Login failed"
+    });
   }
 };
+
 
 
 

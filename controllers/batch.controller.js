@@ -98,6 +98,7 @@ exports.addStudentsToBatch = async (req, res) => {
   try {
     const { batchId } = req.params;
     const { studentIds } = req.body;
+    const instituteId = req.user.instituteId; // 🔥 JWT source
 
     if (!Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({
@@ -107,7 +108,7 @@ exports.addStudentsToBatch = async (req, res) => {
 
     const batch = await Batch.findOne({
       _id: batchId,
-      instituteId: req.instituteId
+      instituteId
     });
 
     if (!batch) {
@@ -117,7 +118,7 @@ exports.addStudentsToBatch = async (req, res) => {
     // validate students belong to same institute
     const students = await Student.find({
       _id: { $in: studentIds },
-      instituteId: req.instituteId
+      instituteId
     });
 
     if (students.length !== studentIds.length) {
@@ -126,20 +127,28 @@ exports.addStudentsToBatch = async (req, res) => {
       });
     }
 
-    // add students safely (no duplicates)
+    // 1️⃣ Update batch → add students
     await Batch.updateOne(
       { _id: batchId },
       { $addToSet: { studentIds: { $each: studentIds } } }
     );
 
+    // 2️⃣ Update students → add batch
+    await Student.updateMany(
+      { _id: { $in: studentIds } },
+      { $addToSet: { batchIds: batchId } }
+    );
+
     return res.status(200).json({
       message: "Students added to batch successfully"
     });
+
   } catch (error) {
     console.error("Add students error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * =========================

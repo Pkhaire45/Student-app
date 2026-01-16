@@ -120,31 +120,36 @@ exports.studentLogin = async (req, res) => {
 exports.getTestsForStudent = async (req, res) => {
   try {
     const studentId = req.user.userId;
+    const instituteId = req.user.instituteId;
 
     const student = await Student.findOne({
       _id: studentId,
-      instituteId: req.instituteId
+      instituteId
     });
 
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    if (!student.batchIds || student.batchIds.length === 0) {
-      return res.status(404).json({ message: "Student not assigned to any batch" });
+    if (!Array.isArray(student.batchIds) || student.batchIds.length === 0) {
+      return res.status(404).json({
+        message: "Student not assigned to any batch"
+      });
     }
 
     const tests = await Test.find({
-      instituteId: req.instituteId,
+      instituteId,
       batchId: { $in: student.batchIds }
     }).sort({ createdAt: -1 });
 
     return res.status(200).json({ tests });
+
   } catch (error) {
     console.error("Get tests error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.solveTest = async (req, res) => {
   const { testId, answers } = req.body;
   const studentId = req.user.userId;
@@ -192,57 +197,75 @@ exports.solveTest = async (req, res) => {
 exports.getTestResult = async (req, res) => {
   const { testId } = req.params;
   const studentId = req.user.userId;
+  const instituteId = req.user.instituteId;
 
   try {
+    // 1️⃣ Validate test
     const test = await Test.findOne({
       _id: testId,
-      instituteId: req.instituteId
+      instituteId
     });
 
     if (!test) {
       return res.status(404).json({ message: "Test not found" });
     }
 
+    // 2️⃣ Get all questions of test
     const questions = await Question.find({
       testId,
-      instituteId: req.instituteId
+      instituteId
     });
 
+    // 3️⃣ Get all attempts by student for this test
     const attempts = await TestAttempt.find({
       testId,
       studentId,
-      instituteId: req.instituteId
+      instituteId
     });
 
     if (!attempts.length) {
       return res.status(404).json({ message: "No attempt found for this test" });
     }
 
+    // 4️⃣ Build attempt lookup map (🔥 FIX)
+    const attemptMap = new Map();
+
+    attempts.forEach((a) => {
+      const qId =
+        typeof a.questionId === "object" && a.questionId._id
+          ? a.questionId._id.toString()
+          : a.questionId.toString();
+
+      attemptMap.set(qId, a);
+    });
+
+    // 5️⃣ Evaluate results
     let score = 0;
 
     const detailedResults = questions.map((q) => {
-      const attempt = attempts.find(
-        (a) => a.questionId.toString() === q._id.toString()
-      );
+      const attempt = attemptMap.get(q._id.toString());
 
       const isCorrect = attempt
-        ? attempt.selectedOption === q.correctOption
+        ? Number(attempt.selectedOption) === Number(q.correctOption)
         : false;
 
       if (isCorrect) score++;
 
       return {
         questionText: q.questionText,
-        selectedOption: attempt?.selectedOption ?? null,
+        selectedOption: attempt ? attempt.selectedOption : null,
         correctOption: q.correctOption,
         isCorrect
       };
     });
+    
 
+    // 6️⃣ Calculate percentage
     const totalQuestions = questions.length;
     const percentage =
       totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
 
+    // 7️⃣ Response
     return res.status(200).json({
       test: {
         id: test._id,
@@ -253,8 +276,11 @@ exports.getTestResult = async (req, res) => {
       percentage: Number(percentage.toFixed(2)),
       detailedResults
     });
+
   } catch (error) {
     console.error("Get test result error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
