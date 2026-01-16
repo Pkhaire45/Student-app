@@ -5,6 +5,9 @@ const Teacher = require("../models/Teacher");
 const Student = require("../models/Student");
 const Institute = require("../models/Institute");
 
+const generateInstituteCode = () => {
+  return `INST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+};
 
 exports.registerInstitute = async (req, res) => {
   try {
@@ -29,10 +32,14 @@ exports.registerInstitute = async (req, res) => {
       return res.status(400).json({ message: "Admin already exists" });
     }
 
+    // 🧠 auto-generate unique institute code
+    const instituteCode = generateInstituteCode();
+
     // 🏫 create institute
     const institute = await Institute.create({
       name: instituteName,
-      address
+      address,
+      code: instituteCode
     });
 
     // 👤 create admin
@@ -40,13 +47,16 @@ exports.registerInstitute = async (req, res) => {
       instituteId: institute._id,
       name: adminName,
       email: adminEmail.toLowerCase(),
-      password, // ⚠️ plaintext (dev only)
+      password,
       role: "ADMIN"
     });
 
     res.status(201).json({
       message: "Institute and Admin created successfully",
-      instituteId: institute._id,
+      institute: {
+        id: institute._id,
+        code: institute.code
+      },
       adminId: admin._id
     });
 
@@ -55,6 +65,7 @@ exports.registerInstitute = async (req, res) => {
     res.status(500).json({ message: "Registration failed" });
   }
 };
+
 
 const generateToken = (payload) =>
   jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "30d" });
