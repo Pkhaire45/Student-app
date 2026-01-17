@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema(
   {
+    // 🔐 Institute scope
     instituteId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Institute",
@@ -9,18 +10,21 @@ const studentSchema = new mongoose.Schema(
       index: true
     },
 
+    // A. Student Name
     fullName: {
       type: String,
       required: true,
       trim: true
     },
 
+    // Username (login)
     username: {
       type: String,
       required: true,
       trim: true
     },
 
+    // C. Email ID
     email: {
       type: String,
       required: true,
@@ -28,18 +32,94 @@ const studentSchema = new mongoose.Schema(
       trim: true
     },
 
+    // L. Password
     password: {
       type: String,
       required: true,
       select: false
     },
 
-    registrationDate: {
-      type: Date,
-      default: Date.now
+    // B. Contact Number
+    contactNumber: {
+      type: String,
+      trim: true
     },
 
-    registrationTime: String,
+    // D. Date of Birth
+    dateOfBirth: {
+      type: Date
+    },
+
+    // E. Gender
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"]
+    },
+
+    // F. Address
+    address: {
+      type: String,
+      trim: true
+    },
+
+    // G. Standard/Class
+    standard: {
+      type: String
+    },
+
+    // Academic year (optional but useful)
+    year: {
+      type: String
+    },
+
+    // H. Admission for Subject
+    subjects: [
+      {
+        type: String,
+        trim: true
+      }
+    ],
+
+    // I. Guardian Name
+    guardianName: {
+      type: String,
+      trim: true
+    },
+
+    // J. Guardian Contact Number
+    guardianContactNumber: {
+      type: String,
+      trim: true
+    },
+
+    // K. Relation with Guardian
+    guardianRelation: {
+      type: String,
+      enum: ["Father", "Mother", "Other"]
+    },
+
+    // M. School / College Name
+    institutionName: {
+      type: String,
+      trim: true
+    },
+
+    // N. School / College Address
+    institutionAddress: {
+      type: String,
+      trim: true
+    },
+
+    // Extra (already useful)
+    stream: String,
+    photo: String,
+
+    batchIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Batch"
+      }
+    ],
 
     status: {
       type: String,
@@ -47,26 +127,14 @@ const studentSchema = new mongoose.Schema(
       default: "active"
     },
 
-    standard: String,
-    year: String,
-    stream: String,
+    registrationDate: {
+      type: Date,
+      default: Date.now
+    },
 
-    photo: String,
-    contactNumber: String,
-    dateOfBirth: Date,
-
-    guardianName: String,
-    guardianContactNumber: String,
-    guardianRelation: String,
-
-    batchIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Batch"
-      }
-    ]
+    registrationTime: String
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Student", studentSchema); // ✅ REQUIRED
+module.exports = mongoose.model("Student", studentSchema);

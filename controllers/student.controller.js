@@ -17,14 +17,19 @@ exports.registerStudent = async (req, res) => {
     username,
     email,
     password,
+    contactNumber,
+    dateOfBirth,
+    gender,
+    address,
     standard,
     year,
     stream,
-    contactNumber,
-    dateOfBirth,
+    subjects = [],
     guardianName,
     guardianContactNumber,
     guardianRelation,
+    institutionName,
+    institutionAddress,
     batchIds = []
   } = req.body;
 
@@ -51,21 +56,26 @@ exports.registerStudent = async (req, res) => {
       });
     }
 
-    // 4️⃣ Create student (PLAIN PASSWORD)
+    // 4️⃣ Create student
     const student = await Student.create({
       instituteId: req.instituteId,
       fullName: fullName.trim(),
       username: cleanUsername,
       email: email?.trim(),
-      password, // ❗ plain text as requested
+      password, // ⚠️ plain text (you know the risk)
+      contactNumber,
+      dateOfBirth,
+      gender,
+      address,
       standard,
       year,
       stream,
-      contactNumber,
-      dateOfBirth,
+      subjects,
       guardianName,
       guardianContactNumber,
       guardianRelation,
+      institutionName,
+      institutionAddress,
       batchIds
     });
 
@@ -75,7 +85,9 @@ exports.registerStudent = async (req, res) => {
         id: student._id,
         fullName: student.fullName,
         username: student.username,
-        email: student.email
+        email: student.email,
+        standard: student.standard,
+        status: student.status
       }
     });
   } catch (error) {
@@ -83,6 +95,7 @@ exports.registerStudent = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 exports.studentLogin = async (req, res) => {
   const { username, password } = req.body;
