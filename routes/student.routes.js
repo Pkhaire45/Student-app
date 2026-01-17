@@ -12,7 +12,15 @@ router.post(
   studentController.registerStudent
 );
 
-// 🔐 Student login (plain password)
+// � Get all students (Admin only)
+router.get(
+  "/all",
+  auth,
+  roleGuard("ADMIN"),
+  studentController.getAllStudents
+);
+
+// �🔐 Student login (plain password)
 router.post("/login", studentController.studentLogin);
 
 // 📚 Get tests for logged-in student

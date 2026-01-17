@@ -271,7 +271,7 @@ exports.getTestResult = async (req, res) => {
         isCorrect
       };
     });
-    
+
 
     // 6️⃣ Calculate percentage
     const totalQuestions = questions.length;
@@ -292,6 +292,21 @@ exports.getTestResult = async (req, res) => {
 
   } catch (error) {
     console.error("Get test result error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await Student.find({
+      instituteId: req.instituteId
+    }).select("-password");
+
+    return res.status(200).json({
+      students
+    });
+  } catch (error) {
+    console.error("Get all students error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
