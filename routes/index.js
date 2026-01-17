@@ -7,5 +7,5 @@ router.use("/students", require("./student.routes"));
 router.use("/teachers", require("./teacher.routes"));
 router.use("/tests", require("./test.routes"));
 router.use("/attendance", require("./attendance.routes"));
-
+router.use("/assignments", require("./assignment.routes"));
 module.exports = router;
