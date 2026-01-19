@@ -40,6 +40,12 @@ const testSchema = new mongoose.Schema(
       required: true
     },
 
+    testType: {
+      type: String, // MCQ, Unit Test
+      required: true,
+      enum: ["MCQ", "Unit Test"]
+    },
+
     dueDate: {
       type: Date
     },

@@ -8,34 +8,72 @@ const Student = require("../models/Student");
  */
 exports.createTest = async (req, res) => {
   try {
-    const { questions, ...testData } = req.body;
+    const {
+      questions,
+      testTitle,
+      description,
+      subject,
+      standard,
+      duration,
+      testType,
+      batchId,
+      dueDate
+    } = req.body;
+
+    // 1️⃣ Validate required fields
+    if (!testTitle || !subject || !duration || !testType || !batchId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
     if (!Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ message: "Questions are required" });
     }
 
+    // 2️⃣ Create Test
     const test = await Test.create({
-      ...testData,
-      instituteId: req.instituteId
+      instituteId: req.instituteId,
+      batchId,
+      testTitle,
+      description,
+      subject,
+      standard,
+      duration,
+      testType,
+      dueDate
     });
 
+    // 3️⃣ Process Questions
     for (const q of questions) {
+      let formattedOptions = [];
+
+      // Smart handling: if options is array of strings, map to objects
+      if (Array.isArray(q.options) && typeof q.options[0] === "string") {
+        formattedOptions = q.options.map((opt, index) => ({
+          optionText: opt,
+          optionNumber: index + 1
+        }));
+      } else {
+        // Assume already in correct format
+        formattedOptions = q.options;
+      }
+
       await Question.create({
         instituteId: req.instituteId,
         testId: test._id,
         questionText: q.questionText,
-        correctOption: q.correctOption,
-        options: q.options
+        correctOption: Number(q.correctOption),
+        options: formattedOptions
       });
     }
 
     return res.status(201).json({
       message: "Test created successfully",
-      testId: test._id
+      testId: test._id,
+      testType: test.testType
     });
   } catch (error) {
     console.error("Create test error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
