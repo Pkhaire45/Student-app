@@ -1,4 +1,4 @@
-const Assignment = require("../models/Assignment");
+const Assignment = require("../models/assignment");
 const Submission = require("../models/Submission");
 const Batch = require("../models/Batch");
 const Student = require("../models/Student");
