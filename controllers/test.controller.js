@@ -200,3 +200,45 @@ exports.getAllTestSubmissions = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+/**
+ * GET TEST BY ID
+ */
+exports.getTestById = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const test = await Test.findOne({ _id: testId, instituteId: req.instituteId });
+
+    if (!test) {
+      return res.status(404).json({ message: "Test not found" });
+    }
+
+    const questions = await Question.find({ testId: test._id, instituteId: req.instituteId });
+
+    return res.status(200).json({ test, questions });
+  } catch (error) {
+    console.error("Get test by ID error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+/**
+ * GET TESTS BY BATCH ID
+ */
+exports.getTestsByBatchId = async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    // Validate that batchId is provided
+    if (!batchId) {
+      return res.status(400).json({ message: "Batch ID is required" });
+    }
+
+    const tests = await Test.find({ batchId, instituteId: req.instituteId }).sort({ createdAt: -1 });
+
+    return res.status(200).json({ tests });
+  } catch (error) {
+    console.error("Get tests by batch ID error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

@@ -20,12 +20,26 @@ router.get(
   testController.getTests
 );
 
-// 📊 Get all submissions for a test (ADMIN / TEACHER)
+// � Get all submissions for a test (ADMIN / TEACHER)
 router.get(
   "/:testId/submissions",
   auth,
   roleGuard("ADMIN", "TEACHER"),
   testController.getAllTestSubmissions
+);
+
+// �📦 Get tests by batch ID
+router.get(
+  "/batch/:batchId",
+  auth,
+  testController.getTestsByBatchId
+);
+
+// ℹ️ Get test by ID
+router.get(
+  "/:testId",
+  auth,
+  testController.getTestById
 );
 
 module.exports = router;
