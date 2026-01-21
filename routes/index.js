@@ -10,4 +10,5 @@ router.use("/attendance", require("./attendance.routes"));
 router.use("/assignments", require("./assignment.routes"));
 router.use("/homework", require("./homework.routes"));
 router.use("/classwork", require("./classWork.routes"));
+router.use("/submissions", require("./submission.routes"));
 module.exports = router;
