@@ -155,17 +155,28 @@ exports.addStudentsToBatch = async (req, res) => {
  * UPDATE BATCH (ADMIN)
  * =========================
  */
+/**
+ * =========================
+ * UPDATE BATCH (ADMIN)
+ * =========================
+ */
 exports.updateBatch = async (req, res) => {
   try {
     const { batchId } = req.params;
+    const updates = req.body;
+
+    // Prevent restricted fields from being updated
+    delete updates.instituteId;
+    delete updates.studentIds; // Students should be managed via add/remove endpoints
+    delete updates._id;
 
     const batch = await Batch.findOneAndUpdate(
       {
         _id: batchId,
         instituteId: req.instituteId
       },
-      req.body,
-      { new: true }
+      { $set: updates },
+      { new: true, runValidators: true }
     );
 
     if (!batch) {
@@ -178,7 +189,7 @@ exports.updateBatch = async (req, res) => {
     });
   } catch (error) {
     console.error("Update batch error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -191,20 +202,30 @@ exports.deleteBatch = async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    const deleted = await Batch.findOneAndDelete({
+    // 1️⃣ Find and delete batch
+    const batch = await Batch.findOneAndDelete({
       _id: batchId,
       instituteId: req.instituteId
     });
 
-    if (!deleted) {
+    if (!batch) {
       return res.status(404).json({ message: "Batch not found" });
     }
+
+    // 2️⃣ Cleanup: Remove this batchId from students' records
+    await Student.updateMany(
+      { batchIds: batchId },
+      {
+        $pull: { batchIds: batchId },
+        // Optional: specific standard/stream cleanup if tied to batch? No, just ID.
+      }
+    );
 
     return res.status(200).json({
       message: "Batch deleted successfully"
     });
   } catch (error) {
     console.error("Delete batch error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };

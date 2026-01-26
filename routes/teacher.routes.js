@@ -21,4 +21,28 @@ router.get(
   teacherController.getTeachers
 );
 
+// ℹ️ Get teacher by ID (ADMIN)
+router.get(
+  "/:teacherId",
+  auth,
+  roleGuard("ADMIN"),
+  teacherController.getTeacherById
+);
+
+// ✏️ Update teacher (ADMIN)
+router.put(
+  "/:teacherId",
+  auth,
+  roleGuard("ADMIN"),
+  teacherController.updateTeacher
+);
+
+// 🗑️ Delete teacher (ADMIN)
+router.delete(
+  "/:teacherId",
+  auth,
+  roleGuard("ADMIN"),
+  teacherController.deleteTeacher
+);
+
 module.exports = router;

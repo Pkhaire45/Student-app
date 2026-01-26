@@ -222,6 +222,7 @@ exports.getTestById = async (req, res) => {
   }
 };
 
+// ... existing code ...
 /**
  * GET TESTS BY BATCH ID
  */
@@ -242,3 +243,115 @@ exports.getTestsByBatchId = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+/**
+ * UPDATE TEST (ADMIN / TEACHER)
+ */
+exports.updateTest = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const {
+      questions,
+      testTitle,
+      description,
+      subject,
+      standard,
+      duration,
+      testType,
+      batchId,
+      dueDate,
+      dueTime
+    } = req.body;
+
+    // 1️⃣ Find the test
+    const test = await Test.findOne({ _id: testId, instituteId: req.instituteId });
+
+    if (!test) {
+      return res.status(404).json({ message: "Test not found" });
+    }
+
+    // 2️⃣ Update Test Fields
+    if (testTitle) test.testTitle = testTitle;
+    if (description) test.description = description;
+    if (subject) test.subject = subject;
+    if (standard) test.standard = standard;
+    if (duration) test.duration = duration;
+    if (testType) test.testType = testType;
+    if (batchId) test.batchId = batchId;
+    if (dueDate) test.dueDate = dueDate;
+    if (dueTime) test.dueTime = dueTime;
+
+    await test.save();
+
+    // 3️⃣ Update Questions if provided
+    // If questions array is strictly provided (even empty), we replace them.
+    // If it's undefined, we leave existing questions alone.
+    if (questions && Array.isArray(questions)) {
+      // Remove old questions
+      await Question.deleteMany({ testId: test._id });
+
+      // Create new questions
+      if (questions.length > 0) {
+        for (const q of questions) {
+          let formattedOptions = [];
+
+          if (Array.isArray(q.options) && typeof q.options[0] === "string") {
+            formattedOptions = q.options.map((opt, index) => ({
+              optionText: opt,
+              optionNumber: index + 1
+            }));
+          } else {
+            formattedOptions = q.options;
+          }
+
+          await Question.create({
+            instituteId: req.instituteId,
+            testId: test._id,
+            questionText: q.questionText,
+            correctOption: Number(q.correctOption),
+            options: formattedOptions
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      message: "Test updated successfully",
+      testId: test._id
+    });
+  } catch (error) {
+    console.error("Update test error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+/**
+ * DELETE TEST (ADMIN / TEACHER)
+ */
+exports.deleteTest = async (req, res) => {
+  try {
+    const { testId } = req.params;
+
+    // 1️⃣ Find and delete the test
+    const test = await Test.findOneAndDelete({
+      _id: testId,
+      instituteId: req.instituteId
+    });
+
+    if (!test) {
+      return res.status(404).json({ message: "Test not found" });
+    }
+
+    // 2️⃣ Delete associated questions
+    await Question.deleteMany({ testId: testId });
+
+    // 3️⃣ Delete associated attempts (Optional but recommended to keep DB clean)
+    await TestAttempt.deleteMany({ testId: testId });
+
+    return res.status(200).json({ message: "Test and related data deleted successfully" });
+  } catch (error) {
+    console.error("Delete test error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+

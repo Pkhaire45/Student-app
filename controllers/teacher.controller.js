@@ -1,27 +1,168 @@
 const Teacher = require("../models/Teacher");
 
+/**
+ * CREATE TEACHER (Admin Only)
+ */
 exports.createTeacher = async (req, res) => {
-  const exists = await Teacher.findOne({
-    username: req.body.username,
-    instituteId: req.instituteId
-  });
+  try {
+    const {
+      fullName,
+      username,
+      password,
+      email,
+      sex,
+      dateOfBirth,
+      contactNumber,
+      address,
+      teachingSubject,
+      totalExperience,
+      previousEmployer
+    } = req.body;
 
-  if (exists) {
-    return res.status(400).json({ message: "Username exists" });
+    // 1️⃣ Validate required fields
+    if (!fullName || !username || !password || !email) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // 2️⃣ Check if username already exists in this institute
+    const exists = await Teacher.findOne({
+      username,
+      instituteId: req.instituteId
+    });
+
+    if (exists) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    // 3️⃣ Create Teacher
+    // Note: Password hashing is skipped to match existing Auth controller pattern. 
+    // If you add hashing later, update it here too.
+    const teacher = await Teacher.create({
+      instituteId: req.instituteId,
+      fullName,
+      username,
+      password, // Stored as plain text per existing codebase pattern
+      email,
+      sex,
+      dateOfBirth,
+      contactNumber,
+      address,
+      teachingSubject,
+      totalExperience,
+      previousEmployer
+    });
+
+    // Return result without password
+    teacher.password = undefined;
+
+    return res.status(201).json({
+      message: "Teacher created successfully",
+      teacher
+    });
+  } catch (error) {
+    console.error("Create teacher error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
-
-  const teacher = await Teacher.create({
-    ...req.body,
-    instituteId: req.instituteId
-  });
-
-  res.status(201).json(teacher);
 };
 
+/**
+ * GET ALL TEACHERS (Admin Only)
+ */
 exports.getTeachers = async (req, res) => {
-  const teachers = await Teacher.find({
-    instituteId: req.instituteId
-  }).select("-password");
+  try {
+    const teachers = await Teacher.find({
+      instituteId: req.instituteId
+    })
+      .select("-password")
+      .sort({ createdAt: -1 });
 
-  res.json(teachers);
+    return res.status(200).json({ teachers });
+  } catch (error) {
+    console.error("Get teachers error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * GET TEACHER BY ID (Admin / Self?)
+ */
+exports.getTeacherById = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    const teacher = await Teacher.findOne({
+      _id: teacherId,
+      instituteId: req.instituteId
+    }).select("-password");
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    return res.status(200).json({ teacher });
+  } catch (error) {
+    console.error("Get teacher by ID error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * UPDATE TEACHER (Admin Only)
+ */
+exports.updateTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    const updates = req.body;
+
+    // Prevent instituteId or password update via this general route if strict
+    // For now, we allow updating everything except instituteId
+    delete updates.instituteId;
+
+    // If password is being updated, we ideally hash it here, but keeping plain text
+    // to match current auth.controller logic.
+
+    const teacher = await Teacher.findOneAndUpdate(
+      { _id: teacherId, instituteId: req.instituteId },
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    return res.status(200).json({
+      message: "Teacher updated successfully",
+      teacher
+    });
+  } catch (error) {
+    console.error("Update teacher error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+/**
+ * DELETE TEACHER (Admin Only)
+ */
+exports.deleteTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    const teacher = await Teacher.findOneAndDelete({
+      _id: teacherId,
+      instituteId: req.instituteId
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // TODO: Clean up related data (assignments, etc.) if strict references exist.
+    // For now, simple delete.
+
+    return res.status(200).json({ message: "Teacher deleted successfully" });
+  } catch (error) {
+    console.error("Delete teacher error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
 };

@@ -42,4 +42,20 @@ router.get(
   testController.getTestById
 );
 
+// ✏️ Update test (ADMIN / TEACHER)
+router.put(
+  "/:testId",
+  auth,
+  roleGuard("ADMIN", "TEACHER"),
+  testController.updateTest
+);
+
+// 🗑️ Delete test (ADMIN / TEACHER)
+router.delete(
+  "/:testId",
+  auth,
+  roleGuard("ADMIN", "TEACHER"),
+  testController.deleteTest
+);
+
 module.exports = router;
