@@ -1,4 +1,5 @@
 const Teacher = require("../models/Teacher");
+const Batch = require("../models/Batch");
 
 /**
  * CREATE TEACHER (Admin Only)
@@ -52,6 +53,14 @@ exports.createTeacher = async (req, res) => {
       previousEmployer
     });
 
+    // 4️⃣ Assign Batches if provided
+    if (req.body.batches && Array.isArray(req.body.batches) && req.body.batches.length > 0) {
+      await Batch.updateMany(
+        { _id: { $in: req.body.batches }, instituteId: req.instituteId },
+        { $set: { teacherId: teacher._id } }
+      );
+    }
+
     // Return result without password
     teacher.password = undefined;
 
@@ -74,6 +83,7 @@ exports.getTeachers = async (req, res) => {
       instituteId: req.instituteId
     })
       .select("-password")
+      .populate("batches", "batchName standard")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({ teachers });
@@ -93,7 +103,9 @@ exports.getTeacherById = async (req, res) => {
     const teacher = await Teacher.findOne({
       _id: teacherId,
       instituteId: req.instituteId
-    }).select("-password");
+    })
+      .select("-password")
+      .populate("batches");
 
     if (!teacher) {
       return res.status(404).json({ message: "Teacher not found" });
@@ -118,6 +130,28 @@ exports.updateTeacher = async (req, res) => {
     // For now, we allow updating everything except instituteId
     delete updates.instituteId;
 
+    // Handle Batches Update
+    if (updates.batches) {
+      const newBatchIds = updates.batches;
+
+      // Unassign all batches currently assigned to this teacher
+      await Batch.updateMany(
+        { teacherId: teacherId, instituteId: req.instituteId },
+        { $unset: { teacherId: 1 } }
+      );
+
+      // Assign new batches
+      if (Array.isArray(newBatchIds) && newBatchIds.length > 0) {
+        await Batch.updateMany(
+          { _id: { $in: newBatchIds }, instituteId: req.instituteId },
+          { $set: { teacherId: teacherId } }
+        );
+      }
+
+      // Remove batches from updates to avoid Schema errors (since it's a virtual)
+      delete updates.batches;
+    }
+
     // If password is being updated, we ideally hash it here, but keeping plain text
     // to match current auth.controller logic.
 
@@ -125,7 +159,9 @@ exports.updateTeacher = async (req, res) => {
       { _id: teacherId, instituteId: req.instituteId },
       { $set: updates },
       { new: true, runValidators: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("batches");
 
     if (!teacher) {
       return res.status(404).json({ message: "Teacher not found" });
@@ -158,6 +194,9 @@ exports.deleteTeacher = async (req, res) => {
     }
 
     // TODO: Clean up related data (assignments, etc.) if strict references exist.
+    // Unassign batches from this teacher
+    await Batch.updateMany({ teacherId: teacherId }, { $unset: { teacherId: 1 } });
+
     // For now, simple delete.
 
     return res.status(200).json({ message: "Teacher deleted successfully" });

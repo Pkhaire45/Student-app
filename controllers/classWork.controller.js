@@ -32,7 +32,7 @@ exports.createClassWork = async (req, res) => {
 
         // 3. Handle Attachments
         let attachments = [];
-        if (req.files && Array.isArray(req.files)) {
+        if (req.files && req.files.length > 0) {
             attachments = req.files.map(file => ({
                 fileUrl: `/uploads/classworks/${file.filename}`
             }));
@@ -188,6 +188,16 @@ exports.updateClassWork = async (req, res) => {
                 fileUrl: `/uploads/classworks/${file.filename}`
             }));
             classWork.attachments.push(...newFiles);
+        }
+
+        // Optional: Remove attachments if requested
+        if (req.body.removeAttachmentIds) {
+            let removeIds = req.body.removeAttachmentIds;
+            if (!Array.isArray(removeIds)) removeIds = [removeIds];
+
+            classWork.attachments = classWork.attachments.filter(
+                att => !removeIds.includes(att._id.toString())
+            );
         }
 
         const { batchId, startDate, endDate, description, workDate } = req.body;

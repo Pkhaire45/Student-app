@@ -32,7 +32,7 @@ exports.createHomeWork = async (req, res) => {
 
         // 3. Handle Attachments
         let attachments = [];
-        if (req.files && Array.isArray(req.files)) {
+        if (req.files && req.files.length > 0) {
             attachments = req.files.map(file => ({
                 fileUrl: `/uploads/homework/${file.filename}`
             }));
@@ -183,12 +183,23 @@ exports.updateHomeWork = async (req, res) => {
             return res.status(404).json({ message: "Homework not found" });
         }
 
-        // Append new attachments if any
+        // Handle Attachments: Add new files to existing ones
         if (req.files && req.files.length > 0) {
             const newFiles = req.files.map(file => ({
                 fileUrl: `/uploads/homework/${file.filename}`
             }));
             homeWork.attachments.push(...newFiles);
+        }
+
+        // Optional: Remove attachments if requested via body (e.g., removeAttachmentIds)
+        // This is a common requirement "to implement"
+        if (req.body.removeAttachmentIds) {
+            let removeIds = req.body.removeAttachmentIds;
+            if (!Array.isArray(removeIds)) removeIds = [removeIds];
+
+            homeWork.attachments = homeWork.attachments.filter(
+                att => !removeIds.includes(att._id.toString())
+            );
         }
 
         // Update other fields

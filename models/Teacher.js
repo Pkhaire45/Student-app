@@ -50,4 +50,16 @@ const teacherSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+// Virtual to populate batches assigned to this teacher
+teacherSchema.virtual("batches", {
+  ref: "Batch",
+  localField: "_id",
+  foreignField: "teacherId"
+});
+
+// Ensure virtuals are included in JSON output
+teacherSchema.set("toJSON", { virtuals: true });
+teacherSchema.set("toObject", { virtuals: true });
+
 module.exports = mongoose.model("Teacher", teacherSchema); // ✅ THIS WAS MISSING
