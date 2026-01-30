@@ -47,4 +47,22 @@ router.get(
   studentController.getTestResult
 );
 
+
+// ✏️ Update student
+router.put(
+  "/:studentId",
+  auth,
+  roleGuard("ADMIN"),
+  studentController.updateStudent
+);
+
+// 🗑️ Delete student
+router.delete(
+  "/:studentId",
+  auth,
+  roleGuard("ADMIN"),
+  studentController.deleteStudent
+);
+
 module.exports = router;
+

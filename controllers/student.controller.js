@@ -300,7 +300,7 @@ exports.getAllStudents = async (req, res) => {
   try {
     const students = await Student.find({
       instituteId: req.instituteId
-    }).select("-password");
+    }).select("+password");
 
     return res.status(200).json({
       students
@@ -312,3 +312,66 @@ exports.getAllStudents = async (req, res) => {
 };
 
 
+
+
+exports.updateStudent = async (req, res) => {
+  const { studentId } = req.params;
+  const updates = req.body;
+
+  try {
+    // Check if username is being updated and if it's unique
+    if (updates.username) {
+      const existingStudent = await Student.findOne({
+        username: updates.username,
+        instituteId: req.instituteId,
+        _id: { $ne: studentId }
+      });
+
+      if (existingStudent) {
+        return res.status(400).json({
+          message: "Username already exists in this institute"
+        });
+      }
+    }
+
+    const student = await Student.findOneAndUpdate(
+      { _id: studentId, instituteId: req.instituteId },
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    return res.status(200).json({
+      message: "Student updated successfully",
+      student
+    });
+  } catch (error) {
+    console.error("Update student error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  const { studentId } = req.params;
+
+  try {
+    const student = await Student.findOneAndDelete({
+      _id: studentId,
+      instituteId: req.instituteId
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    return res.status(200).json({
+      message: "Student deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete student error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
