@@ -173,3 +173,71 @@ exports.login = async (req, res) => {
 
 
 
+
+exports.getProfile = async (req, res) => {
+  try {
+    // Only allow ADMIN for now as per requirement, or check based on role
+    // Since IDs are likely unique across collections (Mongo), findById on Admin might return null if it's a student.
+    // However, it's safer to check role.
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    const admin = await Admin.findById(req.user.userId);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.json({
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      instituteId: admin.instituteId
+    });
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ message: "Error fetching profile" });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    const { name, email, password } = req.body;
+    const adminId = req.user.userId;
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email.toLowerCase();
+
+    // If updating password
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    const admin = await Admin.findByIdAndUpdate(adminId, updateData, { new: true });
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role
+      }
+    });
+
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ message: "Update failed" });
+  }
+};
