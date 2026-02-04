@@ -300,7 +300,9 @@ exports.getAllStudents = async (req, res) => {
   try {
     const students = await Student.find({
       instituteId: req.instituteId
-    }).select("+password");
+    })
+      .select("+password")
+      .populate("batchIds");
 
     return res.status(200).json({
       students
